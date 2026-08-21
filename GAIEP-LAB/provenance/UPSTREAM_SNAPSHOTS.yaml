@@ -1,0 +1,24 @@
+schema_version: 1
+captured_at: 2026-08-21
+policy: protected-reference
+snapshots:
+  greenz-ai-platform:
+    repository: harimvks/greenz-ai-platform
+    ref: main
+    commit: 3776af2704b5b2cc9f6629239c43d8fe3d48d241
+    status: read-only-reference
+  greenz-ai-engineering:
+    repository: harimvks/greenz-ai-engineering
+    ref: main
+    commit: 53ae576d8af26a32337f8d912c0dc0bd166a1a3c
+    status: read-only-reference
+  GreenZAlgo_V4:
+    repository: harimvks/GreenZAlgo_V4
+    ref: main
+    commit: 33a386970cbba855b1ca35453afe5efbd02e194d
+    status: read-only-reference
+  ChatGPT:
+    repository: harimvks/ChatGPT
+    ref: main
+    commit: 3702ab42c975cdecb41f3fdb0a4819361daa28e2
+    status: laboratory-host
