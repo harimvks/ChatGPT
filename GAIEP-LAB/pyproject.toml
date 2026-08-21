@@ -1,0 +1,26 @@
+[project]
+name = "gaiep-lab"
+version = "0.1.0"
+description = "Isolated GAIEP Runtime VNext laboratory"
+requires-python = ">=3.14"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff==0.16.1",
+    "pyright==1.1.411",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "platform_vnext"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 99
+target-version = "py314"
+
+[tool.pyright]
+pythonVersion = "3.14"
+typeCheckingMode = "strict"
+include = ["platform_vnext"]
