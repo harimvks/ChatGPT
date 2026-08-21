@@ -1,13 +1,9 @@
-"""GreenSkill execution skeleton for bounded Python implementation tasks.
-
-The skill coordinates proposal -> authorization -> mutation -> validation. Model execution is
-injected so the runtime remains provider-agnostic and testable.
-"""
+"""GreenSkill execution skeleton for bounded Python implementation tasks."""
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable, Protocol
+from typing import Iterable, Protocol
 
 from platform_vnext.workspace.mutation_guard import WorkspaceMutationGuard
 from platform_vnext.workspace.write_executor import Mutation, MutationEvidence, WriteSkillExecutor
@@ -44,7 +40,12 @@ class ValidationRunner(Protocol):
 class PythonImplementationSkillExecutor:
     """Execute a bounded Python implementation proposal through governed mutation and validation."""
 
-    def __init__(self, guard: WorkspaceMutationGuard, proposal_generator: ProposalGenerator, validator: ValidationRunner) -> None:
+    def __init__(
+        self,
+        guard: WorkspaceMutationGuard,
+        proposal_generator: ProposalGenerator,
+        validator: ValidationRunner,
+    ) -> None:
         self._writer = WriteSkillExecutor(guard)
         self._proposal_generator = proposal_generator
         self._validator = validator
