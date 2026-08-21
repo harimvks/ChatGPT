@@ -1,6 +1,7 @@
 """Bridge bounded subagent requests into the same RuntimeVNext execution path."""
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from platform_vnext.runtime.contracts import AgentRun, ModelPolicy
@@ -12,15 +13,10 @@ from .worker import GovernedSubagentWorker, SubagentExecution
 
 @dataclass(frozen=True)
 class RuntimeSubagentWorker:
-    """Build a child AgentRun and execute it through the parent runtime.
-
-    Skill lookup is injected so this layer does not own a skill registry. The child inherits the
-    parent's workspace scope and policy-derived permissions; recursion remains disabled by the
-    existing child-policy contract.
-    """
+    """Build a child AgentRun and execute it through the parent runtime."""
 
     runtime: RuntimeVNext
-    skill_resolver: object
+    skill_resolver: Callable[[str], GreenSkill | None]
 
     def _resolve(self, skill_ref: str) -> GreenSkill:
         skill = self.skill_resolver(skill_ref)
@@ -44,11 +40,7 @@ class RuntimeSubagentWorker:
             child_budget_count=0,
             max_subagent_depth=0,
         )
-        result = self.runtime.execute(
-            child,
-            skill,
-            template="{{ payload }}",
-        )
+        result = self.runtime.execute(child, skill, template="{{ payload }}")
         return SubagentExecution(
             output_text=result.response.text,
             model=result.response.model,
