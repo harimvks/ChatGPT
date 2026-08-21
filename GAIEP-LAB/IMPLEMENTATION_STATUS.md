@@ -5,7 +5,19 @@
 
 ## Phase 9 audit status
 
-The laboratory code has now been audited at repository/tree level and the duplicate `platform-vnext/` runtime tree is being removed in favor of the canonical `platform_vnext/` package. The duplicate engineering placeholder trees remain empty and are not imported by the package configuration.
+The laboratory code has been audited at repository/tree level. The canonical executable package is `platform_vnext/`; the earlier duplicate `platform-vnext/` scaffold has been removed. The empty engineering placeholder trees remain non-executable and are not part of the canonical package path.
+
+## Phase 9 hardening completed in this pass
+
+```text
+[done] pytest now discovers tests under tests/ and platform_vnext/
+[done] guarded workspace exposes canonical workspace_root to GS-PY-001
+[done] invalid GreenSkill test fixtures repaired to satisfy procedure invariant
+[done] optional Gateway import moved behind runtime import boundary
+[done] subagent skill resolver typed for strict Pyright
+[done] unused runtime/skill imports removed
+[done] static-verification GitHub Actions workflow added
+```
 
 ## Implemented
 
@@ -30,13 +42,19 @@ The laboratory code has now been audited at repository/tree level and the duplic
 [done] local deployment certification boundary
 [done] isolated pytest contract tests
 [done] isolated lab pyproject
+[done] Phase 9 static verification workflow
 ```
+
+## Verification state
+
+The CI workflow has been added, but no workflow run is currently visible for the latest commit. Therefore **ruff, pyright and pytest have not been claimed as passing**. The next authoritative result must come from GitHub Actions or a real local environment using the same commands.
 
 ## Not yet production-complete
 
 ```text
-[ ] run full test suite in a real local environment
-[ ] run ruff and pyright successfully against the complete lab package
+[ ] clean ruff result
+[ ] clean pyright result
+[ ] clean full pytest result
 [ ] wire the real greenz-ai-engineering Gateway composition root
 [ ] execute a real read-only Gateway run on the Mac
 [ ] execute a real isolated write/validation run on the Mac
@@ -49,7 +67,7 @@ The laboratory code has now been audited at repository/tree level and the duplic
 [ ] model routing/promotion logic
 [ ] framework/Hermes integration
 [ ] GreenZAlgo V4 consumer integration
-[ ] CI/release packaging and operational documentation
+[ ] release packaging and operational documentation
 ```
 
 ## Phase 9 acceptance rule
