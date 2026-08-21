@@ -41,6 +41,11 @@ class WorkspaceMutationGuard:
         self._allowed = tuple(p.resolve() for p in policy.allowed_roots)
         self._forbidden = tuple(p.resolve() for p in policy.forbidden_roots)
 
+    @property
+    def workspace_root(self) -> Path:
+        """Return the canonical workspace root used by authorized operations."""
+        return self._root
+
     def authorize(self, request: MutationRequest) -> Path:
         if request.operation not in self._policy.allowed_operations:
             raise MutationDenied(f"operation {request.operation!r} is not allowed")
