@@ -1,31 +1,70 @@
 from __future__ import annotations
 
-import pytest
+from dataclasses import dataclass
+from decimal import Decimal
 
-from platform_vnext.compat.platform_adapter import (
-    AdapterRequest,
-    NotWiredPlatformAdapter,
-)
+from platform_vnext.compat.platform_adapter import AdapterRequest, GreenZPlatformAdapter
 
 
-def test_adapter_request_is_normalized() -> None:
+@dataclass(frozen=True)
+class FakeOptions:
+    model: str = "qwen3.6:27b"
+
+
+@dataclass(frozen=True)
+class FakeTiming:
+    total_duration_ns: int = 2_500_000_000
+
+
+@dataclass(frozen=True)
+class FakeProviderResponse:
+    output_text: str = "implemented"
+    options: FakeOptions = FakeOptions()
+    timing: FakeTiming = FakeTiming()
+
+
+@dataclass(frozen=True)
+class FakeGatewayResponse:
+    provider_name: str = "local_qwen"
+    provider_response: FakeProviderResponse = FakeProviderResponse()
+    execution_id: str = "exec-1"
+    failed_over_from: tuple[str, ...] = ()
+
+
+class FakeGateway:
+    def __init__(self) -> None:
+        self.calls: list[object] = []
+
+    def reason(self, **kwargs: object) -> FakeGatewayResponse:
+        self.calls.append(kwargs)
+        return FakeGatewayResponse()
+
+
+def test_adapter_delegates_to_existing_gateway() -> None:
+    gateway = FakeGateway()
+    adapter = GreenZPlatformAdapter(gateway)
     request = AdapterRequest(
+        capability_name="python-implementation",
+        capability_version="1",
         capability_tag="coding",
-        prompt="implement X",
+        template="Implement the requested change.",
+        context_manifest=object(),
         context_id="ctx-1",
-        context_hash="abc123",
+        context_hash="hash-1",
         classification="INTERNAL",
     )
 
-    assert request.capability_tag == "coding"
-    assert request.context_id == "ctx-1"
-    assert request.context_hash == "abc123"
-    assert request.classification == "INTERNAL"
+    response = adapter.generate(request)
 
+    assert response.text == "implemented"
+    assert response.model == "qwen3.6:27b"
+    assert response.provider_name == "local_qwen"
+    assert response.elapsed_seconds == 2.5
+    assert response.execution_id == "exec-1"
+    assert response.failed_over_from == ()
+    assert len(gateway.calls) == 1
 
-def test_unwired_adapter_fails_closed() -> None:
-    adapter = NotWiredPlatformAdapter()
-    request = AdapterRequest("coding", "x", "ctx", "hash", "INTERNAL")
-
-    with pytest.raises(RuntimeError, match="not wired"):
-        adapter.generate(request)
+    reasoning_request = gateway.calls[0]["request"]
+    assert reasoning_request.capability_tag == "coding"
+    assert reasoning_request.manifest is request.context_manifest
+    assert gateway.calls[0]["template"] == request.template
