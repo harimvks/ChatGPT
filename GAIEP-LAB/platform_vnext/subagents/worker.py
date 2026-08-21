@@ -1,9 +1,4 @@
-"""Worker bridge for bounded subagent execution.
-
-The worker deliberately accepts an injected executor. It does not call models directly; the
-injected executor is expected to use the same skill/context/platform Gateway path as a primary
-run. This keeps subagents governed by the same runtime rather than creating a second AI path.
-"""
+"""Worker bridge for bounded subagent execution."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -39,14 +34,14 @@ class GovernedSubagentWorker:
             return SubagentResult(
                 subagent_id="pending",
                 status=SubagentStatus.FAILED,
-                error="empty subagent output",
+                failure_refs=("empty-subagent-output",),
             )
 
+        artifact_refs = (f"model:{execution.model}", f"provider:{execution.provider}")
+        evidence_refs = (f"execution:{execution.execution_id}",) if execution.execution_id else ()
         return SubagentResult(
             subagent_id="pending",
             status=SubagentStatus.COMPLETED,
-            output_text=execution.output_text,
-            execution_id=execution.execution_id,
-            model=execution.model,
-            provider=execution.provider,
+            artifact_refs=artifact_refs,
+            evidence_refs=evidence_refs,
         )
