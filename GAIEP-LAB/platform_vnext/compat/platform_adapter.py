@@ -3,8 +3,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-import importlib
 from typing import Any, Protocol
+
+from platform_vnext.compat.gateway_protocol import GreenZGateway, ReasoningRequestFactory
 
 
 @dataclass(frozen=True)
@@ -34,21 +35,21 @@ class PlatformAdapter(Protocol):
 
 
 class GreenZPlatformAdapter:
-    """Translate VNext requests to the existing Gateway; do not duplicate platform policy."""
+    """Translate VNext requests to an injected existing Gateway; never duplicate platform policy."""
 
-    def __init__(self, gateway: Any) -> None:
+    def __init__(self, gateway: GreenZGateway, reasoning_request_factory: ReasoningRequestFactory) -> None:
         self._gateway = gateway
+        self._reasoning_request_factory = reasoning_request_factory
 
     def generate(self, request: AdapterRequest) -> AdapterResponse:
-        gateway_module = importlib.import_module("gateway.gateway")
-        reasoning_request_type = getattr(gateway_module, "ReasoningRequest")
+        reasoning_request = self._reasoning_request_factory(
+            capability_name=request.capability_name,
+            capability_version=request.capability_version,
+            capability_tag=request.capability_tag,
+            manifest=request.context_manifest,
+        )
         response = self._gateway.reason(
-            request=reasoning_request_type(
-                capability_name=request.capability_name,
-                capability_version=request.capability_version,
-                capability_tag=request.capability_tag,
-                manifest=request.context_manifest,
-            ),
+            request=reasoning_request,
             template=request.template,
             selected_at=datetime.now(UTC),
         )
@@ -65,7 +66,7 @@ class GreenZPlatformAdapter:
 
 
 class NotWiredPlatformAdapter:
-    """Fail-closed placeholder for environments without the platform installed."""
+    """Fail-closed adapter for environments where the real Gateway is unavailable."""
 
     def generate(self, request: AdapterRequest) -> AdapterResponse:
         del request
