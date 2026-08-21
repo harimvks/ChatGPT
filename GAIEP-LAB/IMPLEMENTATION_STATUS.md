@@ -7,16 +7,21 @@
 
 The laboratory code has been audited at repository/tree level. The canonical executable package is `platform_vnext/`; the earlier duplicate `platform-vnext/` scaffold has been removed. The empty engineering placeholder trees remain non-executable and are not part of the canonical package path.
 
-## Phase 9 hardening completed in this pass
+## Phase 9 hardening completed
 
 ```text
-[done] pytest now discovers tests under tests/ and platform_vnext/
+[done] pytest discovery configured for tests/ and platform_vnext/
 [done] guarded workspace exposes canonical workspace_root to GS-PY-001
 [done] invalid GreenSkill test fixtures repaired to satisfy procedure invariant
 [done] optional Gateway import moved behind runtime import boundary
 [done] subagent skill resolver typed for strict Pyright
 [done] unused runtime/skill imports removed
 [done] static-verification GitHub Actions workflow added
+[done] atomic mutation transaction primitive and rollback tests
+[done] dependency-injected GreenZ Gateway protocol
+[done] GreenZ Platform adapter delegation tests
+[done] existing GreenZ engineering Gateway composition bridge
+[done] read-only Gate C smoke runner
 ```
 
 ## Implemented
@@ -43,11 +48,14 @@ The laboratory code has been audited at repository/tree level. The canonical exe
 [done] isolated pytest contract tests
 [done] isolated lab pyproject
 [done] Phase 9 static verification workflow
+[done] existing GreenZ Gateway composition bridge
 ```
 
 ## Verification state
 
 The CI workflow has been added, but no workflow run is currently visible for the latest commit. Therefore **ruff, pyright and pytest have not been claimed as passing**. The next authoritative result must come from GitHub Actions or a real local environment using the same commands.
+
+The Gate C smoke runner is now executable when the local environment exposes both protected upstream checkouts. It deliberately performs no filesystem mutation and does not call Ollama directly; it reuses the existing `greenz-ai-engineering.runner.gateway_client` composition root, which itself builds the certified registry, model registry and Gateway.
 
 ## Not yet production-complete
 
@@ -55,9 +63,8 @@ The CI workflow has been added, but no workflow run is currently visible for the
 [ ] clean ruff result
 [ ] clean pyright result
 [ ] clean full pytest result
-[ ] wire the real greenz-ai-engineering Gateway composition root
-[ ] execute a real read-only Gateway run on the Mac
-[ ] execute a real isolated write/validation run on the Mac
+[ ] execute Gate C real read-only Gateway run on the Mac
+[ ] execute Gate D real isolated write/validation run on the Mac
 [ ] connect certification output to the existing authoritative ledger
 [ ] persist evidence/checkpoints
 [ ] production-grade retry/repair loop
