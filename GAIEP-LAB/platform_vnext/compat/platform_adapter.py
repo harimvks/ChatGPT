@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+import importlib
 from typing import Any, Protocol
 
 
@@ -39,10 +40,10 @@ class GreenZPlatformAdapter:
         self._gateway = gateway
 
     def generate(self, request: AdapterRequest) -> AdapterResponse:
-        from gateway.gateway import ReasoningRequest
-
+        gateway_module = importlib.import_module("gateway.gateway")
+        reasoning_request_type = getattr(gateway_module, "ReasoningRequest")
         response = self._gateway.reason(
-            request=ReasoningRequest(
+            request=reasoning_request_type(
                 capability_name=request.capability_name,
                 capability_version=request.capability_version,
                 capability_tag=request.capability_tag,
