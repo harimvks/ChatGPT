@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+import pytest
+
 from platform_vnext.compat.platform_adapter import AdapterResponse
 from platform_vnext.runtime.contracts import AgentRun, ModelPolicy, RunStatus, TaskPolicy, WorkspaceScope
 from platform_vnext.runtime.engine import RuntimeVNext
-from platform_vnext.skills.contracts import GreenSkill, SkillStatus
+from platform_vnext.skills.contracts import GreenSkill, SkillStatus, SkillStep
 
 
 class FakeContext:
@@ -65,12 +67,12 @@ def make_run() -> AgentRun:
     )
 
 
-def make_skill() -> GreenSkill:
+def make_skill(skill_id: str = "GS-PY-001") -> GreenSkill:
     return GreenSkill(
-        skill_id="GS-PY-001",
-        name="Python Implementation",
+        skill_id=skill_id,
+        name="Python Implementation" if skill_id == "GS-PY-001" else "Unauthorized",
         version="1.0.0",
-        owner="greenz-ai-engineering",
+        owner="greenz-ai-engineering" if skill_id == "GS-PY-001" else "test",
         capability="CODING",
         status=SkillStatus.ACTIVE,
         prerequisites=(),
@@ -78,7 +80,7 @@ def make_skill() -> GreenSkill:
         expected_artifacts=(),
         validation_gates=(),
         evidence_requirements=(),
-        procedure=(),
+        procedure=(SkillStep(step_id="implement", purpose="perform implementation"),),
     )
 
 
@@ -108,26 +110,8 @@ def test_vertical_slice_reaches_accepted() -> None:
 
 def test_vertical_slice_rejects_unauthorized_skill() -> None:
     adapter = FakeAdapter()
-    run = make_run()
-    skill = GreenSkill(
-        skill_id="GS-PY-999",
-        name="Unauthorized",
-        version="1.0.0",
-        owner="test",
-        capability="CODING",
-        status=SkillStatus.ACTIVE,
-        prerequisites=(),
-        allowed_toolsets=(),
-        expected_artifacts=(),
-        validation_gates=(),
-        evidence_requirements=(),
-        procedure=(),
-    )
-
-    import pytest
-
     with pytest.raises(PermissionError, match="not allowed"):
         RuntimeVNext(adapter=adapter, context_factory=FakeContext()).execute(
-            run, skill, template="{{ payload }}"
+            make_run(), make_skill("GS-PY-999"), template="{{ payload }}"
         )
     assert not adapter.requests
