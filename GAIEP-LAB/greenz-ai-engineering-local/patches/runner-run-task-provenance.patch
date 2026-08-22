@@ -1,0 +1,28 @@
+*** Begin Patch
+*** Update File: runner/run_task.py
+@@
+ from runner.parse import ParseError, parse_file_map
++from runner.provenance_model_call import with_provenance
+ from runner.qwen_lane import truthy, validate_qwen_task
+@@
+ def _default_model_call(
+@@
+     return call
++
++
++def _maybe_wrap_model_call_with_provenance(
++    model_call: ModelCall,
++    *,
++    enabled: bool,
++    repo_root: Path,
++    run_id: str,
++) -> ModelCall:
++    """Enable GAIEP model-output provenance without changing Gateway behavior."""
++    if not enabled:
++        return model_call
++    return with_provenance(
++        model_call,
++        repo_root=repo_root,
++        run_id=run_id,
++    )
+*** End Patch
