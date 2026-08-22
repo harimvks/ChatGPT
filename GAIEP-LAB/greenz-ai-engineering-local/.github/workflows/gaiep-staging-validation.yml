@@ -1,0 +1,42 @@
+name: GAIEP staging validation
+
+on:
+  push:
+    branches:
+      - gaiep-local-runtime-integration
+  pull_request:
+    branches:
+      - gaiep-local-runtime-integration
+  workflow_dispatch:
+
+jobs:
+  staging-structure:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: GAIEP-LAB/greenz-ai-engineering-local
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify staging contract files
+        run: |
+          set -euo pipefail
+          test -f RUNNER_INTEGRATION_PLAN.md
+          test -f STAGING_CHECKOUT_MANIFEST.md
+          test -f STAGING_EXECUTION_CHECKLIST.md
+          test -f patches/RUN_TASK_CALLSITE_PATCH_PLAN.md
+          test -f patches/runner-run-task-provenance.patch
+          test -f runner/provenance_model_call.py
+          test -f tests/runner/test_provenance_model_call.py
+          test -f staging/run_task_provenance_harness.py
+          test -f tests/staging/test_run_task_provenance_harness.py
+
+      - name: Compile staging Python sources
+        run: |
+          set -euo pipefail
+          python -m compileall -q runner staging tests
+
+      - name: Report executable GreenZ validation requirement
+        run: |
+          echo 'Staging structure and Python syntax validated.'
+          echo 'Full pytest/ruff/pyright/GEOS validation requires the actual GreenZ checkout and dependencies.'
