@@ -1,19 +1,21 @@
 # GAIEP Self-Improvement Engine — V0
 
-This is the first implementation slice inspired by the Ornith-1.5 self-improvement methodology.
+This research-only implementation is inspired by the Ornith-1.5 methodology while preserving GAIEP-LAB safety boundaries.
 
-## Scope
-
-V0 implements the **research/evidence loop** while remaining isolated from production repositories and certification state:
+## Current loop
 
 ```text
-seed / observed signal
+certification corpus / seed
         ↓
 TaskFactory
         ↓
-controlled engineering task
+EngineeringTask
         ↓
-external validation gate
+ResearchRolloutRunner
+        ↓
+model/agent artifact
+        ↓
+EvaluationRunner / external gate
         ↓
 EvaluationResult
         ↓
@@ -22,45 +24,27 @@ FailureMiner
 targeted follow-up task
 ```
 
-The integration layer now includes:
+The rollout function is injected by the research harness. The package does not own model routing or mutate production systems.
 
-- `corpus_adapter.py` — read-only adapter for GAIEP certification artifacts;
-- `gate_adapter.py` — subprocess boundary for externally supplied `ruff` / `pyright` / `pytest` commands;
-- deterministic conversion of certification evidence into `EngineeringTask` records;
-- tests covering corpus parsing and external validation execution.
+## Evidence boundary
 
-## Design principles
+External checks define success. Candidate model output cannot self-report a pass. Existing certification artifacts can be converted into deterministic research tasks, and supplied pytest/ruff/pyright commands can be executed through the external validation adapter.
 
-1. **External evidence defines success.** The model cannot self-report a pass.
-2. **Tasks are reproducible.** Task IDs are content-derived.
-3. **Certification evidence is preserved.** Model, benchmark, corpus version, result, functional status, lint/type/test evidence, latency, backstop, and failure detail are retained.
-4. **Validation remains external.** The gate executes supplied commands and returns immutable evidence; it does not alter source code.
-5. **Failures become research signals.** Repeated failure classes can generate targeted follow-ups.
-6. **Research stays isolated.** Nothing here modifies production repositories, model weights, routing policy, or certification state.
-7. **Promotion remains human-gated.** Any future trained candidate must enter the existing certification/promotion path.
+## Deliberate non-goals
 
-## Next layers
+- no autonomous RL;
+- no model-weight mutation;
+- no production routing changes;
+- no certification bypass;
+- no automatic promotion;
+- no modification of protected upstream repositories.
 
-```text
-Certification Corpus
-        ↓
-Task / Case Adapter
-        ↓
-Harness / Scaffold Generator
-        ↓
-Agent Rollout
-        ↓
-Sandbox + Validation Gate
-        ↓
-Reward / Evidence Engine
-        ↓
-Trajectory / Failure Store
-        ↓
-Curriculum + Task Generation
-        ↓
-Fine-tuning / RL
-        ↓
-Certification
-```
+## Next stages
 
-Training remains intentionally out of scope until real rollout/evaluation evidence is accumulated.
+1. Connect rollout to the existing GAIEP local model/agent runner without bypassing the Gateway.
+2. Add sandbox/workspace isolation for candidate code artifacts.
+3. Persist rollout/evaluation evidence through existing provenance/storage contracts.
+4. Add scaffold variants and compare completion, quality, latency and tool-call cost.
+5. Mine recurring failure clusters into a controlled curriculum.
+6. Export accepted trajectories for MLX/PyTorch LoRA experiments.
+7. Only after sufficient evidence, investigate RL/self-improvement training on larger infrastructure.
