@@ -4,14 +4,23 @@ This package is deliberately research-only. It does not mutate production
 models, routing policy, repositories, or certification state.
 """
 
-from .task_factory import EngineeringTask, TaskFactory
+from .corpus_adapter import CertificationRecord, certification_to_task, load_certifications, parse_certification
 from .evaluation import EvaluationResult, EvaluationRunner
 from .failure_miner import FailureMiner
+from .gate_adapter import ExternalValidationGate, GateCommand, GateResult
+from .task_factory import EngineeringTask, TaskFactory
 
 __all__ = [
+    "CertificationRecord",
+    "certification_to_task",
+    "load_certifications",
+    "parse_certification",
     "EngineeringTask",
     "TaskFactory",
     "EvaluationResult",
     "EvaluationRunner",
     "FailureMiner",
+    "ExternalValidationGate",
+    "GateCommand",
+    "GateResult",
 ]
