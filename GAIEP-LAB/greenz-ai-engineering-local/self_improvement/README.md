@@ -4,7 +4,7 @@ This is the first implementation slice inspired by the Ornith-1.5 self-improveme
 
 ## Scope
 
-V0 implements only the **research/evidence loop**:
+V0 implements the **research/evidence loop** while remaining isolated from production repositories and certification state:
 
 ```text
 seed / observed signal
@@ -13,7 +13,7 @@ TaskFactory
         ↓
 controlled engineering task
         ↓
-external evaluator
+external validation gate
         ↓
 EvaluationResult
         ↓
@@ -22,46 +22,45 @@ FailureMiner
 targeted follow-up task
 ```
 
-It deliberately does **not** implement autonomous model training, RL, production routing changes, or automatic promotion.
+The integration layer now includes:
+
+- `corpus_adapter.py` — read-only adapter for GAIEP certification artifacts;
+- `gate_adapter.py` — subprocess boundary for externally supplied `ruff` / `pyright` / `pytest` commands;
+- deterministic conversion of certification evidence into `EngineeringTask` records;
+- tests covering corpus parsing and external validation execution.
 
 ## Design principles
 
 1. **External evidence defines success.** The model cannot self-report a pass.
 2. **Tasks are reproducible.** Task IDs are content-derived.
-3. **Failures become research signals.** Repeated failure classes can generate targeted follow-ups.
-4. **Research stays isolated.** Nothing here modifies production repositories, model weights, routing policy, or certification state.
-5. **Promotion remains human-gated.** Any future trained candidate must enter the existing certification/promotion path.
+3. **Certification evidence is preserved.** Model, benchmark, corpus version, result, functional status, lint/type/test evidence, latency, backstop, and failure detail are retained.
+4. **Validation remains external.** The gate executes supplied commands and returns immutable evidence; it does not alter source code.
+5. **Failures become research signals.** Repeated failure classes can generate targeted follow-ups.
+6. **Research stays isolated.** Nothing here modifies production repositories, model weights, routing policy, or certification state.
+7. **Promotion remains human-gated.** Any future trained candidate must enter the existing certification/promotion path.
 
-## Ornith-inspired future layers
+## Next layers
 
 ```text
-Task Factory
-    ↓
+Certification Corpus
+        ↓
+Task / Case Adapter
+        ↓
 Harness / Scaffold Generator
-    ↓
+        ↓
 Agent Rollout
-    ↓
-Sandbox + Validation
-    ↓
-Reward Engine
-    ↓
-Trajectory / Evidence Store
-    ↓
+        ↓
+Sandbox + Validation Gate
+        ↓
+Reward / Evidence Engine
+        ↓
+Trajectory / Failure Store
+        ↓
 Curriculum + Task Generation
-    ↓
+        ↓
 Fine-tuning / RL
-    ↓
+        ↓
 Certification
 ```
 
-The V0 boundary intentionally stops before training. This lets us collect real GreenZ engineering evidence before choosing an RL/fine-tuning implementation.
-
-## Next implementation steps
-
-- connect the factory to existing GAIEP certification corpus;
-- add a sandbox adapter around the existing ruff/pyright/pytest gate;
-- persist task/rollout/evaluation records using existing provenance/storage contracts;
-- add scaffold variants and measure task completion by scaffold;
-- add trajectory/failure clustering;
-- build a dataset export for MLX/PyTorch fine-tuning;
-- only then evaluate LoRA/RL training on Mac or NVIDIA infrastructure.
+Training remains intentionally out of scope until real rollout/evaluation evidence is accumulated.
