@@ -45,7 +45,7 @@ def test_certification_becomes_research_task():
     assert task.source == "certification_corpus"
     assert task.task_type == "debug"
     assert "ENG-CM-112" in task.title
-    assert "CERT-ENG-CM112-Q25C14B-CORPUSV3-R1" in task.constraints
+    assert "certification_id=CERT-ENG-CM112-Q25C14B-CORPUSV3-R1" in task.constraints
     assert task.acceptance == ("pytest", "ruff", "pyright")
 
 
