@@ -15,9 +15,12 @@ class Runtime(Protocol):
 
     def start_run(self, run: AgentRun) -> AgentRun:
         """Register or transition a run into execution."""
+        ...
 
     def authorize(self, action: Action) -> AuthorizationDecision:
         """Authorize an action before execution."""
+        ...
 
     def observe(self, observation: Observation) -> None:
         """Record an observable result or failure."""
+        ...
