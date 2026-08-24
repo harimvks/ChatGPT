@@ -1,0 +1,36 @@
+# greenz-ai-engineering — runner harness config
+#
+# No model names here — see runner/config.py's docstring for why. Which model actually runs a
+# CODING/REVIEW request is resolved by the Gateway from ai/policies/provider_registry.yaml plus
+# the live certification ledger (benchmarks/certifications/), never from this file.
+ollama:
+  base_url: "http://localhost:11434"
+  request_timeout_seconds: 120
+
+context_builder:
+  # SOFT. An assembly budget chosen by this harness -- "the context is bigger than intended".
+  # Exceeding it is informational; nothing is truncated or dropped by it.
+  max_context_tokens: 12000
+  # HARD, and a different claim entirely. [measured 2026-08-18] Deployments declare a 32768
+  # window with 16384 reserved for output, so ~16384 input tokens is where the MODEL runs out of
+  # room. A prompt past this is genuinely at risk, and P-D30-06 proved it is reachable: that run
+  # assembled 23481 tokens, qwen3.6:27b failed all three iterations, and the Gateway failed over.
+  #
+  # A TOKEN COUNT IS NOT A MODEL NAME, so this does not violate this file's own rule against
+  # naming models -- it is a capacity figure, and keeping it here rather than asserting it in a
+  # log string is what stopped the message from claiming "nothing was truncated" at 23k.
+  input_headroom_tokens: 16384
+
+gaiep_provenance:
+  # OFF by default. This optional GAIEP layer wraps the existing Gateway ModelCall and records
+  # successful model completions through the existing corrections/provenance artifact mechanism.
+  enabled: false
+  # When enabled, artifact/provenance persistence failures stop the run rather than letting a
+  # model-authored change proceed without its required durable evidence.
+  fail_closed: true
+
+# [removed 2026-08-12] `prompts.version` lived here and was recorded into every response
+# log as the prompt_version. One value for four prompts that version independently is
+# wrong by construction, and it WAS wrong: it said v1 while prompts/implementation.md
+# said 2. Each prompt's own front matter is the source now; see
+# runner/context.py::load_system_prompt_version.
