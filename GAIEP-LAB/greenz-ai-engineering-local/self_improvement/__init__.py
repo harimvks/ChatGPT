@@ -11,6 +11,8 @@ from .gate_adapter import ExternalValidationGate, GateCommand, GateResult
 from .gateway_rollout import GatewayResearchRollout, GatewayRolloutRequest
 from .loop import ResearchRun, SelfImprovementLoop
 from .rollout import ResearchRolloutRunner, RolloutResult
+from .sandbox import CandidateSandbox, SandboxWorkspace
+from .sandbox_evaluation import SandboxEvaluation, SandboxEvaluator
 from .task_factory import EngineeringTask, TaskFactory
 
 __all__ = [
@@ -32,4 +34,8 @@ __all__ = [
     "SelfImprovementLoop",
     "ResearchRolloutRunner",
     "RolloutResult",
+    "CandidateSandbox",
+    "SandboxWorkspace",
+    "SandboxEvaluation",
+    "SandboxEvaluator",
 ]
