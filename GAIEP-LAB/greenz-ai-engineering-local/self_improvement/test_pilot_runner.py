@@ -41,4 +41,9 @@ def test_pilot_runner_executes_all_cells_and_records_results(tmp_path: Path):
     results = runner.run(manifest, [task])
     assert len(results) == 1
     assert results[0].trajectory.passed
-    assert (tmp_path / "trajectory.jsonl").read_text().count("task_id") == 1
+    store = TrajectoryStore(tmp_path / "trajectory.jsonl")
+    assert len(store.read_all()) == 1
+    assert store.completed_keys() == {(task.task_id, "m1", "s1")}
+
+    resumed = runner.run(manifest, [task], completed_keys=store.completed_keys())
+    assert resumed == []

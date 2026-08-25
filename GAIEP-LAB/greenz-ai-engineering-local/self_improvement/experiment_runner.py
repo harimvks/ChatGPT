@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from typing import Callable, Iterable
 
 from .artifact import normalize_artifact
 from .evaluation import EvaluationResult
 from .experiment import ExperimentArm, ExperimentPlan
-from .rollout import ResearchRolloutRunner
+from .rollout import RolloutRunner
 from .task_factory import EngineeringTask
 from .trajectory import TrajectoryRecord
 
@@ -23,7 +23,7 @@ class ExperimentTrial:
 class ExperimentRunner:
     """Run model/scaffold arms without owning routing or promotion decisions."""
 
-    def __init__(self, rollout_factory: Callable[[ExperimentArm], ResearchRolloutRunner],
+    def __init__(self, rollout_factory: Callable[[ExperimentArm], RolloutRunner],
                  evaluate: Callable[[EngineeringTask, object], EvaluationResult]) -> None:
         self._rollout_factory = rollout_factory
         self._evaluate = evaluate

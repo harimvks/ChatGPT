@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-import subprocess
-from typing import Sequence
 
 
 @dataclass(frozen=True)
@@ -40,8 +41,12 @@ class ExternalValidationGate:
         results: list[GateResult] = []
         for spec in self._commands:
             try:
+                command = tuple(
+                    sys.executable if part == "python" else part
+                    for part in spec.command
+                )
                 completed = subprocess.run(
-                    spec.command,
+                    command,
                     cwd=workspace,
                     capture_output=True,
                     text=True,

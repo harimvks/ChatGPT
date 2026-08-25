@@ -7,10 +7,10 @@ coupling the research package to the production certification implementation.
 
 from __future__ import annotations
 
+import re
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-import re
-from typing import Iterable
 
 from .task_factory import EngineeringTask, TaskFactory
 
@@ -49,14 +49,15 @@ def parse_certification(text: str) -> CertificationRecord:
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
-        if line.endswith(":") and not line.startswith(" "):
+        is_nested = raw[:1].isspace()
+        if line.endswith(":") and not is_nested:
             section = line[:-1]
             continue
         match = _FIELD.match(line)
         if not match:
             continue
         key, value = match.groups()
-        if section == "configuration":
+        if section == "configuration" and is_nested:
             continue
         values[key] = _scalar(value)
 

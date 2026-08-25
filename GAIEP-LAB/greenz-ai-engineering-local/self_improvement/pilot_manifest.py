@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
 import json
-from typing import Iterable
+from collections.abc import Iterable
+from dataclasses import asdict, dataclass
 
 from .experiment import ExperimentArm, ExperimentPlan
 
@@ -16,6 +16,7 @@ class PilotManifest:
     task_ids: tuple[str, ...]
     arms: tuple[ExperimentArm, ...]
     validation_profile: str
+    source_case_ids: tuple[str, ...] = ()
 
     @classmethod
     def from_plan(
@@ -24,17 +25,24 @@ class PilotManifest:
         *,
         corpus_version: str,
         validation_profile: str = "pytest-ruff-pyright",
-    ) -> "PilotManifest":
+        source_case_ids: Iterable[str] = (),
+    ) -> PilotManifest:
         if not plan.task_ids:
             raise ValueError("pilot manifest requires at least one task")
         if not plan.arms:
             raise ValueError("pilot manifest requires at least one experiment arm")
+        sources = tuple(source_case_ids)
+        if sources and len(sources) != len(plan.task_ids):
+            raise ValueError("source case IDs must match task IDs")
+        if len(set(sources)) != len(sources):
+            raise ValueError("source case IDs must be unique")
         return cls(
             experiment_id=plan.name,
             corpus_version=corpus_version,
             task_ids=tuple(plan.task_ids),
             arms=tuple(plan.arms),
             validation_profile=validation_profile,
+            source_case_ids=sources,
         )
 
     def trial_count(self) -> int:

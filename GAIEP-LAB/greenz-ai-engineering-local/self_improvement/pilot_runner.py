@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Callable, Iterable
 
 from .artifact import normalize_artifact
 from .evaluation import EvaluationResult
 from .experiment import ExperimentArm
 from .pilot_manifest import PilotManifest
-from .rollout import ResearchRolloutRunner
+from .rollout import RolloutResult, RolloutRunner
 from .task_factory import EngineeringTask
 from .trajectory import TrajectoryRecord
 from .trajectory_store import TrajectoryStore
@@ -30,7 +30,7 @@ class PilotRunner:
 
     def __init__(
         self,
-        rollout_factory: Callable[[ExperimentArm], ResearchRolloutRunner],
+        rollout_factory: Callable[[ExperimentArm], RolloutRunner],
         evaluate: Callable[[EngineeringTask, object], EvaluationResult],
         store: TrajectoryStore,
     ) -> None:
@@ -68,15 +68,18 @@ class PilotRunner:
                     artifact = normalize_artifact(rollout.artifact)
                     evaluation = self._evaluate(task, artifact)
                     trajectory = TrajectoryRecord.from_results(
-                        rollout.__class__(
+                        RolloutResult(
                             task_id=rollout.task_id,
                             artifact=artifact,
                             model_name=rollout.model_name,
                             scaffold_name=rollout.scaffold_name,
+                            endpoint_model=rollout.endpoint_model,
+                            latency_s=rollout.latency_s,
+                            usage=rollout.usage,
                         ),
                         evaluation,
                     )
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     trajectory = TrajectoryRecord(
                         task_id=task_id,
                         model_name=arm.model_name,
@@ -84,7 +87,7 @@ class PilotRunner:
                         artifact_files=(),
                         passed=False,
                         reward=0.0,
-                        checks=(('runner_exception', False),),
+                        checks=(("runner_exception", False),),
                         failure_class=type(exc).__name__,
                     )
                 finished = self._now()

@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Callable
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, field
+from typing import Protocol
 
 from .task_factory import EngineeringTask
 
@@ -14,15 +15,25 @@ class RolloutResult:
     artifact: object
     model_name: str
     scaffold_name: str
+    endpoint_model: str | None = None
+    latency_s: float | None = None
+    usage: Mapping[str, object] = field(default_factory=dict)
 
 
 RolloutFn = Callable[[EngineeringTask], object]
 
 
+class RolloutRunner(Protocol):
+    def run(self, task: EngineeringTask) -> RolloutResult:
+        ...
+
+
 class ResearchRolloutRunner:
     """Execute an injected model/agent function without owning model routing."""
 
-    def __init__(self, rollout: RolloutFn, *, model_name: str, scaffold_name: str = "default") -> None:
+    def __init__(
+        self, rollout: RolloutFn, *, model_name: str, scaffold_name: str = "default"
+    ) -> None:
         self._rollout = rollout
         self._model_name = model_name
         self._scaffold_name = scaffold_name

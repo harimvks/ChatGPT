@@ -8,11 +8,11 @@ boundary before execution.
 
 from __future__ import annotations
 
+import json
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from hashlib import sha256
-import json
 from pathlib import Path
-from typing import Iterable
 
 
 @dataclass(frozen=True)
@@ -47,13 +47,15 @@ class TaskFactory:
         if not 1 <= difficulty <= 5:
             raise ValueError("difficulty must be between 1 and 5")
 
+        normalized_acceptance = tuple(acceptance)
+        normalized_constraints = tuple(constraints)
         identity = {
             "task_type": task_type,
             "title": title.strip(),
             "objective": objective.strip(),
             "repository_path": repository_path,
-            "acceptance": list(acceptance),
-            "constraints": list(constraints),
+            "acceptance": normalized_acceptance,
+            "constraints": normalized_constraints,
             "difficulty": difficulty,
             "source": source,
         }
