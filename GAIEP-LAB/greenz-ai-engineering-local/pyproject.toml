@@ -17,6 +17,7 @@ testpaths = [
     "tests/test_agent_runtime_contracts.py",
     "tests/test_context_engine_contracts.py",
     "tests/test_hermes_openhands_baseline_contracts.py",
+    "tests/test_runtime_vnext_execution_contracts.py",
 ]
 pythonpath = ["."]
 addopts = "-q"
@@ -35,6 +36,7 @@ include = [
     "tests/test_agent_runtime_contracts.py",
     "tests/test_context_engine_contracts.py",
     "tests/test_hermes_openhands_baseline_contracts.py",
+    "tests/test_runtime_vnext_execution_contracts.py",
 ]
 pythonVersion = "3.11"
 typeCheckingMode = "basic"
