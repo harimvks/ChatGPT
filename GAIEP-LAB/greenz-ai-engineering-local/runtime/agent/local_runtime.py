@@ -43,6 +43,14 @@ class LocalRuntime:
             payload={"decision": decision.decision.value, "reason": decision.reason},
         ))
         if self.is_shutdown:
+            self.events.append(RuntimeEvent(
+                event_id=f"failed:{action.action_id}",
+                run_id=action.run_id,
+                event_type=RuntimeEventType.ACTION_FAILED,
+                timestamp=now,
+                action_id=action.action_id,
+                payload={"failure_class": "RuntimeShutdown"},
+            ))
             raise RuntimeError("runtime is shut down")
         if decision.decision is Decision.DENY:
             self.events.append(RuntimeEvent(

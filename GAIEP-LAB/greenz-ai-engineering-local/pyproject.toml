@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "gaiep-engineering-lab"
 version = "0.1.0"
@@ -18,6 +22,7 @@ testpaths = [
     "tests/test_context_engine_contracts.py",
     "tests/test_hermes_openhands_baseline_contracts.py",
     "tests/test_runtime_vnext_execution_contracts.py",
+    "tests/test_runtime_vnext_integration_hardening.py",
 ]
 pythonpath = ["."]
 addopts = "-q"
@@ -37,7 +42,12 @@ include = [
     "tests/test_context_engine_contracts.py",
     "tests/test_hermes_openhands_baseline_contracts.py",
     "tests/test_runtime_vnext_execution_contracts.py",
+    "tests/test_runtime_vnext_integration_hardening.py",
 ]
 pythonVersion = "3.11"
 typeCheckingMode = "basic"
 reportMissingTypeStubs = false
+
+[tool.setuptools.packages.find]
+include = ["runtime*", "self_improvement*"]
+exclude = ["tests*"]
