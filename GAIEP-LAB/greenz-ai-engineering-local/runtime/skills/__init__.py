@@ -5,6 +5,7 @@ from runtime.skills.contracts import (
     CertifiedSkillVersion,
     GreenSkill,
     GreenSkillRegistry,
+    SkillDisclosure,
     SkillStatus,
     SkillValidationError,
 )
@@ -14,6 +15,7 @@ __all__ = [
     "CertifiedSkillVersion",
     "GreenSkill",
     "GreenSkillRegistry",
+    "SkillDisclosure",
     "SkillStatus",
     "SkillValidationError",
 ]

@@ -6,6 +6,8 @@ models, execute tools, or write durable memory.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
@@ -68,6 +70,9 @@ class GreenSkill:
     created_at: datetime
     required_capability_ids: tuple[str, ...] = ()
     evidence_refs: tuple[str, ...] = ()
+    context_refs: tuple[str, ...] = ()
+    progressive_disclosure: bool = True
+    fingerprint: str | None = None
 
     def __post_init__(self) -> None:
         _require_non_empty("GreenSkill.skill_id", self.skill_id)
@@ -83,10 +88,57 @@ class GreenSkill:
         object.__setattr__(
             self, "evidence_refs", _dedupe(self.evidence_refs, label="evidence_refs")
         )
+        object.__setattr__(
+            self, "context_refs", _dedupe(self.context_refs, label="context_refs")
+        )
+        computed_fingerprint = self.compute_fingerprint()
+        if self.fingerprint is None:
+            object.__setattr__(self, "fingerprint", computed_fingerprint)
+        elif self.fingerprint != computed_fingerprint:
+            raise SkillValidationError("GreenSkill.fingerprint is not canonical")
         if not set(self.required_capability_ids).issubset(self.applicability.capability_ids):
             raise SkillValidationError("skill cannot require capabilities outside applicability")
         if self.status is SkillStatus.CERTIFIED and not self.evidence_refs:
             raise SkillValidationError("certified skills require evidence references")
+
+    def canonical(self) -> dict[str, object]:
+        return {
+            "applicability": {
+                "capability_ids": self.applicability.capability_ids,
+                "tags": self.applicability.tags,
+                "task_types": self.applicability.task_types,
+            },
+            "context_refs": self.context_refs,
+            "evidence_refs": self.evidence_refs,
+            "name": self.name,
+            "procedure_ref": self.procedure_ref,
+            "progressive_disclosure": self.progressive_disclosure,
+            "required_capability_ids": self.required_capability_ids,
+            "skill_id": self.skill_id,
+            "status": self.status.value,
+            "version": self.version,
+        }
+
+    def compute_fingerprint(self) -> str:
+        payload = json.dumps(self.canonical(), sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+@dataclass(frozen=True)
+class SkillDisclosure:
+    skill: GreenSkill
+    context_refs: tuple[str, ...]
+    capability_ids: tuple[str, ...]
+    fingerprint: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "context_refs", _dedupe(self.context_refs, label="context_refs"))
+        object.__setattr__(
+            self, "capability_ids", _dedupe(self.capability_ids, label="capability_ids")
+        )
+        _require_non_empty("SkillDisclosure.fingerprint", self.fingerprint)
+        if self.fingerprint != self.skill.fingerprint:
+            raise SkillValidationError("SkillDisclosure fingerprint must match skill")
 
 
 @dataclass(frozen=True)
@@ -118,8 +170,29 @@ class GreenSkillRegistry:
     ) -> tuple[GreenSkill, ...]:
         available = set(capability_ids)
         return tuple(
-            skill
-            for skill in self.skills
-            if task_type in skill.applicability.task_types
-            and set(skill.required_capability_ids).issubset(available)
+            sorted(
+                (
+                    skill
+                    for skill in self.skills
+                    if task_type in skill.applicability.task_types
+                    and set(skill.required_capability_ids).issubset(available)
+                ),
+                key=lambda skill: (skill.skill_id, skill.version),
+            )
         )
+
+    def disclose(
+        self, *, task_type: str, capability_ids: tuple[str, ...], max_context_refs: int
+    ) -> tuple[SkillDisclosure, ...]:
+        if max_context_refs < 0:
+            raise SkillValidationError("max_context_refs cannot be negative")
+        disclosures: list[SkillDisclosure] = []
+        for skill in self.applicable_to(task_type=task_type, capability_ids=capability_ids):
+            refs = skill.context_refs[:max_context_refs] if skill.progressive_disclosure else ()
+            disclosures.append(SkillDisclosure(
+                skill=skill,
+                context_refs=refs,
+                capability_ids=skill.required_capability_ids,
+                fingerprint=skill.fingerprint or skill.compute_fingerprint(),
+            ))
+        return tuple(disclosures)

@@ -23,3 +23,10 @@ __all__ = [
     "ContextValidationError",
     "SelectionReason",
 ]
+
+from runtime.context.engine import ContextBuildRequest, DeterministicContextEngine
+
+__all__ = [
+    "ContextBuildRequest",
+    "DeterministicContextEngine",
+]
