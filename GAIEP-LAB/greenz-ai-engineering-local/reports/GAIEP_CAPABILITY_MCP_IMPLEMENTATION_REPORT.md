@@ -13,7 +13,7 @@ The governed Capability Registry and read-only MCP transport boundary are implem
 - Handoff commit: `d166a936e48b0bb30f314d68bd99e95db2632a23`
 - Runtime foundation: `f9bcf45`
 - Runtime integration hardening: `19cbba6`
-- Final implementation commit: `c52362c`
+- Final implementation commit: `2cb3e6f`
 
 ## Files Changed
 
