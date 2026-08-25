@@ -34,6 +34,7 @@ __all__ = [
     "ContextProvenance",
     "ResearchRun",
     "RunProvenance",
+    "provenance_from_mcp_result",
     "SelfImprovementLoop",
     "ResearchRolloutRunner",
     "RolloutResult",
