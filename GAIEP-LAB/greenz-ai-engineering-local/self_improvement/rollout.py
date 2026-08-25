@@ -6,6 +6,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Protocol
 
+from .provenance import RunProvenance
 from .task_factory import EngineeringTask
 
 
@@ -18,6 +19,7 @@ class RolloutResult:
     endpoint_model: str | None = None
     latency_s: float | None = None
     usage: Mapping[str, object] = field(default_factory=dict)
+    provenance: RunProvenance | None = None
 
 
 RolloutFn = Callable[[EngineeringTask], object]

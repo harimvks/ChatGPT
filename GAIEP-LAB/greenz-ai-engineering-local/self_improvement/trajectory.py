@@ -8,6 +8,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from .evaluation import EvaluationResult
+from .provenance import RunProvenance
 from .rollout import RolloutResult
 
 
@@ -24,6 +25,7 @@ class TrajectoryRecord:
     endpoint_model: str | None = None
     latency_s: float | None = None
     usage: Mapping[str, object] = field(default_factory=dict)
+    provenance: RunProvenance | None = None
 
     @classmethod
     def from_results(cls, rollout: RolloutResult, evaluation: EvaluationResult) -> TrajectoryRecord:
@@ -41,6 +43,7 @@ class TrajectoryRecord:
             endpoint_model=rollout.endpoint_model,
             latency_s=rollout.latency_s,
             usage=dict(rollout.usage),
+            provenance=rollout.provenance,
         )
 
     @classmethod
@@ -49,6 +52,9 @@ class TrajectoryRecord:
         payload["artifact_files"] = tuple(payload.get("artifact_files", ()))
         payload["checks"] = tuple(tuple(item) for item in payload.get("checks", ()))
         payload["usage"] = payload.get("usage", {})
+        provenance = payload.get("provenance")
+        if isinstance(provenance, dict):
+            payload["provenance"] = RunProvenance.from_dict(provenance)
         return cls(**payload)
 
     def key(self) -> tuple[str, str, str]:

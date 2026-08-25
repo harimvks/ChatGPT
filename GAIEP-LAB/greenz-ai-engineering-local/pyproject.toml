@@ -25,6 +25,8 @@ testpaths = [
     "tests/test_runtime_vnext_integration_hardening.py",
     "tests/test_capability_mcp_gateway_contracts.py",
     "tests/test_context_skills_integration_contracts.py",
+    "self_improvement/test_provenance.py",
+    "self_improvement/test_provenance.py",
 ]
 pythonpath = ["."]
 addopts = "-q"
