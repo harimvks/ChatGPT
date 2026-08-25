@@ -35,6 +35,7 @@ _TERMINAL_STATUSES = frozenset({
 
 class ActionType(StrEnum):
     MODEL_REQUEST = "model.request"
+    CAPABILITY_READ = "capability.read"
     TOOL_CALL = "tool.call"
     FILE_READ = "file.read"
     FILE_WRITE = "file.write"
@@ -45,6 +46,7 @@ class ActionType(StrEnum):
 
 class ObservationType(StrEnum):
     MODEL_COMPLETED = "model.completed"
+    CAPABILITY_RESULT = "capability.result"
     MODEL_FAILED = "model.failed"
     TOOL_RESULT = "tool.result"
     TOOL_FAILED = "tool.failed"
@@ -157,42 +159,128 @@ class AuthorityScope:
         )
 
 
+class CapabilityAccessMode(StrEnum):
+    READ = "READ"
+    ACTION = "ACTION"
+
+
+class CapabilityRiskClass(StrEnum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    FORBIDDEN = "FORBIDDEN"
+
+
+class CapabilityRuntime(StrEnum):
+    LOCAL = "LOCAL"
+    MCP_READ_ONLY = "MCP_READ_ONLY"
+    UNAVAILABLE = "UNAVAILABLE"
+
+
 @dataclass(frozen=True)
 class Capability:
     capability_id: str
     action_types: tuple[ActionType, ...]
     resource_patterns: tuple[str, ...]
     requires_evidence: bool = False
+    version: str = "v1"
+    description: str = "Runtime capability"
+    access_mode: CapabilityAccessMode = CapabilityAccessMode.ACTION
+    risk_class: CapabilityRiskClass = CapabilityRiskClass.MEDIUM
+    required_scopes: tuple[str, ...] = ()
+    allowed_runtime: tuple[CapabilityRuntime, ...] = (CapabilityRuntime.LOCAL,)
+    provenance_required: bool = False
+    audit_required: bool = True
+    input_schema_ref: str = "schema:none"
+    output_schema_ref: str = "schema:none"
+    authoritative_source: str | None = None
+    freshness: str | None = None
+    point_in_time: str | None = None
+    unavailable_reason: str | None = None
 
     def __post_init__(self) -> None:
         _require_non_empty("Capability.capability_id", self.capability_id)
+        _require_non_empty("Capability.version", self.version)
+        _require_non_empty("Capability.description", self.description)
+        _require_non_empty("Capability.input_schema_ref", self.input_schema_ref)
+        _require_non_empty("Capability.output_schema_ref", self.output_schema_ref)
         if not self.action_types:
             raise ValueError("Capability.action_types cannot be empty")
         if not self.resource_patterns:
             raise ValueError("Capability.resource_patterns cannot be empty")
+        if not self.allowed_runtime:
+            raise ValueError("Capability.allowed_runtime cannot be empty")
         if len(set(self.action_types)) != len(self.action_types):
             raise ValueError("Capability.action_types cannot contain duplicates")
+        if self.access_mode is CapabilityAccessMode.READ and any(
+            action_type not in {ActionType.CAPABILITY_READ, ActionType.FILE_READ}
+            for action_type in self.action_types
+        ):
+            raise ValueError("READ capabilities may only allow read action types")
+        if (
+            self.access_mode is CapabilityAccessMode.ACTION
+            and self.risk_class is CapabilityRiskClass.FORBIDDEN
+            and CapabilityRuntime.UNAVAILABLE not in self.allowed_runtime
+        ):
+            raise ValueError("forbidden action capabilities must remain unavailable")
+        if (
+            CapabilityRuntime.UNAVAILABLE in self.allowed_runtime
+            and self.unavailable_reason is None
+        ):
+            raise ValueError("unavailable capabilities require unavailable_reason")
         object.__setattr__(
             self,
             "resource_patterns",
             _dedupe_sorted(self.resource_patterns, label="resource_patterns"),
         )
+        object.__setattr__(
+            self, "required_scopes", _dedupe_sorted(self.required_scopes, label="required_scopes")
+        )
+        object.__setattr__(
+            self,
+            "allowed_runtime",
+            tuple(sorted(set(self.allowed_runtime), key=lambda item: item.value)),
+        )
+
+    @property
+    def identity(self) -> tuple[str, str]:
+        return (self.capability_id, self.version)
 
 
 @dataclass(frozen=True)
 class CapabilityRegistry:
     capabilities: tuple[Capability, ...]
+    registry_version: str = "capability-registry-v1"
 
     def __post_init__(self) -> None:
-        ids = tuple(cap.capability_id for cap in self.capabilities)
-        if len(set(ids)) != len(ids):
-            raise ValueError("CapabilityRegistry cannot contain duplicate capability IDs")
+        _require_non_empty("CapabilityRegistry.registry_version", self.registry_version)
+        identities = tuple(cap.identity for cap in self.capabilities)
+        if len(set(identities)) != len(identities):
+            raise ValueError("CapabilityRegistry cannot contain duplicate capability identities")
+        object.__setattr__(
+            self, "capabilities", tuple(sorted(self.capabilities, key=lambda cap: cap.identity))
+        )
 
-    def get(self, capability_id: str) -> Capability | None:
-        for capability in self.capabilities:
-            if capability.capability_id == capability_id:
+    def register(self, capability: Capability) -> CapabilityRegistry:
+        return CapabilityRegistry((*self.capabilities, capability), self.registry_version)
+
+    def get(self, capability_id: str, version: str | None = None) -> Capability | None:
+        matches = tuple(cap for cap in self.capabilities if cap.capability_id == capability_id)
+        if version is None:
+            return matches[0] if len(matches) == 1 else None
+        for capability in matches:
+            if capability.version == version:
                 return capability
         return None
+
+    def require(self, capability_id: str, version: str) -> Capability:
+        capability = self.get(capability_id, version)
+        if capability is None:
+            raise KeyError(f"unknown capability: {capability_id}@{version}")
+        return capability
+
+    def enumerate(self) -> tuple[Capability, ...]:
+        return self.capabilities
 
 
 @dataclass(frozen=True)
