@@ -4,6 +4,12 @@ This package is deliberately research-only. It does not mutate production
 models, routing policy, repositories, or certification state.
 """
 
+from .controlled_pilot import (
+    ControlledPilotSpec,
+    build_controlled_pilot,
+    fixture_evaluator,
+    fixture_rollout_factory,
+)
 from .corpus_adapter import (
     CertificationRecord,
     certification_to_task,
@@ -71,6 +77,10 @@ __all__ = [
     "ResearchLineageSummary",
     "summarize_hypothesis",
     "render_hypothesis_report",
+    "ControlledPilotSpec",
+    "build_controlled_pilot",
+    "fixture_evaluator",
+    "fixture_rollout_factory",
     "ExternalValidationGate",
     "GateCommand",
     "GateResult",
