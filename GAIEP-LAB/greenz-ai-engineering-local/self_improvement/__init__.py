@@ -13,6 +13,7 @@ from .gate_adapter import ExternalValidationGate, GateCommand, GateResult
 from .gateway_rollout import GatewayResearchRollout, GatewayRolloutRequest
 from .loop import ResearchRun, SelfImprovementLoop
 from .provenance import AuthorizationProvenance, ContextProvenance, RunProvenance
+from .research_loop import FailureResearchLoop, ResearchHypothesis, ResearchProposal
 from .rollout import ResearchRolloutRunner, RolloutResult
 from .runtime_provenance import provenance_from_mcp_result
 from .sandbox import CandidateSandbox, SandboxWorkspace
@@ -37,6 +38,9 @@ __all__ = [
     "FailureCluster",
     "EvidenceFailureCluster",
     "FailureMiner",
+    "FailureResearchLoop",
+    "ResearchHypothesis",
+    "ResearchProposal",
     "ExternalValidationGate",
     "GateCommand",
     "GateResult",
