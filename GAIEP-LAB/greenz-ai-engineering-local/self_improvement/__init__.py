@@ -32,6 +32,7 @@ from .research_loop import (
     ResearchSubmissionAdapter,
     ResearchSubmissionRecord,
 )
+from .research_report import ResearchLineageSummary, render_hypothesis_report, summarize_hypothesis
 from .rollout import ResearchRolloutRunner, RolloutResult
 from .runtime_provenance import provenance_from_mcp_result
 from .sandbox import CandidateSandbox, SandboxWorkspace
@@ -63,6 +64,9 @@ __all__ = [
     "ResearchSubmissionRecord",
     "ResearchSubmissionAdapter",
     "ResearchProposalStatus",
+    "ResearchLineageSummary",
+    "summarize_hypothesis",
+    "render_hypothesis_report",
     "ExternalValidationGate",
     "GateCommand",
     "GateResult",
