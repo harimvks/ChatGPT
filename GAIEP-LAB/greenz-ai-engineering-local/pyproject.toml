@@ -27,6 +27,7 @@ testpaths = [
     "tests/test_context_skills_integration_contracts.py",
     "self_improvement/test_provenance.py",
     "self_improvement/test_evidence_store.py",
+    "self_improvement/test_experiment_runner.py",
     "tests/test_vertical_runtime_provenance_integration.py",
 ]
 pythonpath = ["."]
