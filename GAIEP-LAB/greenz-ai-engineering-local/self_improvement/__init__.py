@@ -7,7 +7,7 @@ models, routing policy, repositories, or certification state.
 from .corpus_adapter import CertificationRecord, certification_to_task, load_certifications, parse_certification
 from .evaluation import EvaluationResult, EvaluationRunner
 from .evidence_store import EvidenceRecord, GreenMemoryStore, IntegrityReport, MemorySummary
-from .failure_miner import FailureMiner
+from .failure_miner import EvidenceFailureCluster, FailureCluster, FailureMiner
 from .fingerprint import failure_fingerprint, provenance_fingerprint
 from .gate_adapter import ExternalValidationGate, GateCommand, GateResult
 from .gateway_rollout import GatewayResearchRollout, GatewayRolloutRequest
@@ -34,6 +34,8 @@ __all__ = [
     "MemorySummary",
     "failure_fingerprint",
     "provenance_fingerprint",
+    "FailureCluster",
+    "EvidenceFailureCluster",
     "FailureMiner",
     "ExternalValidationGate",
     "GateCommand",
