@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
@@ -58,6 +59,59 @@ class EvidenceRecord:
 
 
 @dataclass(frozen=True)
+class ResearchLineageEvent:
+    """Append-only research lineage event linking failures to follow-up evidence."""
+
+    event_id: str
+    hypothesis_id: str
+    failure_fingerprint: str
+    research_task_id: str
+    status: str
+    source_evidence_ids: tuple[str, ...]
+    experiment_run_id: str | None = None
+    result_evidence_id: str | None = None
+    created_at: str = ""
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        hypothesis_id: str,
+        failure_fingerprint: str,
+        research_task_id: str,
+        status: str,
+        source_evidence_ids: tuple[str, ...],
+        experiment_run_id: str | None = None,
+        result_evidence_id: str | None = None,
+        created_at: str | None = None,
+    ) -> ResearchLineageEvent:
+        identity = {
+            "hypothesis_id": hypothesis_id,
+            "failure_fingerprint": failure_fingerprint,
+            "research_task_id": research_task_id,
+            "status": status,
+            "source_evidence_ids": tuple(sorted(source_evidence_ids)),
+            "experiment_run_id": experiment_run_id,
+            "result_evidence_id": result_evidence_id,
+        }
+        event_id = (
+            "research-lineage-"
+            + hashlib.sha256(json.dumps(identity, sort_keys=True).encode("utf-8")).hexdigest()[:24]
+        )
+        return cls(
+            event_id=event_id,
+            hypothesis_id=hypothesis_id,
+            failure_fingerprint=failure_fingerprint,
+            research_task_id=research_task_id,
+            status=status,
+            source_evidence_ids=tuple(sorted(source_evidence_ids)),
+            experiment_run_id=experiment_run_id,
+            result_evidence_id=result_evidence_id,
+            created_at=created_at or _utc_now(),
+        )
+
+
+@dataclass(frozen=True)
 class IntegrityReport:
     """Read-only integrity verification result."""
 
@@ -91,7 +145,7 @@ def _utc_now() -> str:
 class GreenMemoryStore:
     """Local SQLite evidence ledger with insert-only semantics."""
 
-    SCHEMA_VERSION = 2
+    SCHEMA_VERSION = 3
 
     def __init__(self, path: Path) -> None:
         self._path = path
@@ -147,6 +201,24 @@ class GreenMemoryStore:
                     PRIMARY KEY (record_id, capability_id, authorized),
                     FOREIGN KEY (record_id) REFERENCES evidence_records(record_id)
                 );
+                CREATE TABLE IF NOT EXISTS research_lineage_events (
+                    event_id TEXT PRIMARY KEY,
+                    hypothesis_id TEXT NOT NULL,
+                    failure_fingerprint TEXT NOT NULL,
+                    research_task_id TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    experiment_run_id TEXT,
+                    result_evidence_id TEXT,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (result_evidence_id) REFERENCES evidence_records(record_id)
+                );
+                CREATE TABLE IF NOT EXISTS research_lineage_sources (
+                    event_id TEXT NOT NULL,
+                    evidence_record_id TEXT NOT NULL,
+                    PRIMARY KEY (event_id, evidence_record_id),
+                    FOREIGN KEY (event_id) REFERENCES research_lineage_events(event_id),
+                    FOREIGN KEY (evidence_record_id) REFERENCES evidence_records(record_id)
+                );
                 """
             )
             self._ensure_columns(connection)
@@ -168,6 +240,12 @@ class GreenMemoryStore:
                 CREATE INDEX IF NOT EXISTS idx_evidence_skills ON evidence_skills(fingerprint);
                 CREATE INDEX IF NOT EXISTS idx_evidence_capabilities
                     ON evidence_capabilities(capability_id, authorized);
+                CREATE INDEX IF NOT EXISTS idx_research_lineage_hypothesis
+                    ON research_lineage_events(hypothesis_id, created_at);
+                CREATE INDEX IF NOT EXISTS idx_research_lineage_task
+                    ON research_lineage_events(research_task_id, created_at);
+                CREATE INDEX IF NOT EXISTS idx_research_lineage_source
+                    ON research_lineage_sources(evidence_record_id);
                 """
             )
             self._backfill_indexes(connection)
@@ -231,6 +309,11 @@ class GreenMemoryStore:
                         (row["record_id"], capability, authorized),
                     )
 
+    @staticmethod
+    def record_id_for(record: TrajectoryRecord) -> str:
+        """Return the content-addressed evidence ID used by this store."""
+        return EvidenceRecord.from_trajectory(record).record_id
+
     def append(self, record: TrajectoryRecord) -> str:
         """Persist one trajectory and return its content-addressed record ID."""
         evidence = EvidenceRecord.from_trajectory(record)
@@ -284,6 +367,80 @@ class GreenMemoryStore:
                     ),
                 )
         return evidence.record_id
+
+    def append_research_lineage_event(self, event: ResearchLineageEvent) -> str:
+        """Persist one append-only research lineage event and return its event ID."""
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT OR IGNORE INTO research_lineage_events(
+                    event_id, hypothesis_id, failure_fingerprint, research_task_id, status,
+                    experiment_run_id, result_evidence_id, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    event.event_id,
+                    event.hypothesis_id,
+                    event.failure_fingerprint,
+                    event.research_task_id,
+                    event.status,
+                    event.experiment_run_id,
+                    event.result_evidence_id,
+                    event.created_at,
+                ),
+            )
+            connection.executemany(
+                """
+                INSERT OR IGNORE INTO research_lineage_sources(event_id, evidence_record_id)
+                VALUES (?, ?)
+                """,
+                ((event.event_id, evidence_id) for evidence_id in event.source_evidence_ids),
+            )
+        return event.event_id
+
+    def find_research_lineage_by_hypothesis(
+        self, hypothesis_id: str
+    ) -> tuple[ResearchLineageEvent, ...]:
+        return self._query_lineage(
+            """
+            SELECT * FROM research_lineage_events
+            WHERE hypothesis_id = ? ORDER BY
+                CASE status
+                    WHEN 'PROPOSED' THEN 1
+                    WHEN 'APPROVED' THEN 2
+                    WHEN 'SUBMITTED' THEN 3
+                    WHEN 'COMPLETED' THEN 4
+                    WHEN 'REJECTED' THEN 5
+                    WHEN 'FAILED' THEN 6
+                    ELSE 99
+                END,
+                created_at,
+                event_id
+            """,
+            (hypothesis_id,),
+        )
+
+    def find_research_lineage_by_task(
+        self, research_task_id: str
+    ) -> tuple[ResearchLineageEvent, ...]:
+        return self._query_lineage(
+            """
+            SELECT * FROM research_lineage_events
+            WHERE research_task_id = ? ORDER BY
+                CASE status
+                    WHEN 'PROPOSED' THEN 1
+                    WHEN 'APPROVED' THEN 2
+                    WHEN 'SUBMITTED' THEN 3
+                    WHEN 'COMPLETED' THEN 4
+                    WHEN 'REJECTED' THEN 5
+                    WHEN 'FAILED' THEN 6
+                    ELSE 99
+                END,
+                created_at,
+                event_id
+            """,
+            (research_task_id,),
+        )
 
     def get(self, record_id: str) -> TrajectoryRecord | None:
         with self._connect() as connection:
@@ -433,6 +590,32 @@ class GreenMemoryStore:
         with self._connect() as connection:
             row = connection.execute("SELECT COUNT(*) AS count FROM evidence_records").fetchone()
         return int(row["count"])
+
+    def _query_lineage(
+        self, sql: str, parameters: tuple[Any, ...]
+    ) -> tuple[ResearchLineageEvent, ...]:
+        with self._connect() as connection:
+            rows = connection.execute(sql, parameters).fetchall()
+            source_rows = connection.execute(
+                "SELECT event_id, evidence_record_id FROM research_lineage_sources"
+            ).fetchall()
+        sources: dict[str, list[str]] = {}
+        for row in source_rows:
+            sources.setdefault(str(row["event_id"]), []).append(str(row["evidence_record_id"]))
+        return tuple(
+            ResearchLineageEvent(
+                event_id=str(row["event_id"]),
+                hypothesis_id=str(row["hypothesis_id"]),
+                failure_fingerprint=str(row["failure_fingerprint"]),
+                research_task_id=str(row["research_task_id"]),
+                status=str(row["status"]),
+                source_evidence_ids=tuple(sorted(sources.get(str(row["event_id"]), ()))),
+                experiment_run_id=row["experiment_run_id"],
+                result_evidence_id=row["result_evidence_id"],
+                created_at=str(row["created_at"]),
+            )
+            for row in rows
+        )
 
     def _query(self, sql: str, parameters: tuple[Any, ...]) -> tuple[TrajectoryRecord, ...]:
         with self._connect() as connection:

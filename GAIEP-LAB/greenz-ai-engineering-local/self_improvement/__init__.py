@@ -4,16 +4,34 @@ This package is deliberately research-only. It does not mutate production
 models, routing policy, repositories, or certification state.
 """
 
-from .corpus_adapter import CertificationRecord, certification_to_task, load_certifications, parse_certification
+from .corpus_adapter import (
+    CertificationRecord,
+    certification_to_task,
+    load_certifications,
+    parse_certification,
+)
 from .evaluation import EvaluationResult, EvaluationRunner
-from .evidence_store import EvidenceRecord, GreenMemoryStore, IntegrityReport, MemorySummary
+from .evidence_store import (
+    EvidenceRecord,
+    GreenMemoryStore,
+    IntegrityReport,
+    MemorySummary,
+    ResearchLineageEvent,
+)
 from .failure_miner import EvidenceFailureCluster, FailureCluster, FailureMiner
 from .fingerprint import failure_fingerprint, provenance_fingerprint
 from .gate_adapter import ExternalValidationGate, GateCommand, GateResult
 from .gateway_rollout import GatewayResearchRollout, GatewayRolloutRequest
 from .loop import ResearchRun, SelfImprovementLoop
 from .provenance import AuthorizationProvenance, ContextProvenance, RunProvenance
-from .research_loop import FailureResearchLoop, ResearchHypothesis, ResearchProposal
+from .research_loop import (
+    FailureResearchLoop,
+    ResearchHypothesis,
+    ResearchProposal,
+    ResearchProposalStatus,
+    ResearchSubmissionAdapter,
+    ResearchSubmissionRecord,
+)
 from .rollout import ResearchRolloutRunner, RolloutResult
 from .runtime_provenance import provenance_from_mcp_result
 from .sandbox import CandidateSandbox, SandboxWorkspace
@@ -33,6 +51,7 @@ __all__ = [
     "GreenMemoryStore",
     "IntegrityReport",
     "MemorySummary",
+    "ResearchLineageEvent",
     "failure_fingerprint",
     "provenance_fingerprint",
     "FailureCluster",
@@ -41,6 +60,9 @@ __all__ = [
     "FailureResearchLoop",
     "ResearchHypothesis",
     "ResearchProposal",
+    "ResearchSubmissionRecord",
+    "ResearchSubmissionAdapter",
+    "ResearchProposalStatus",
     "ExternalValidationGate",
     "GateCommand",
     "GateResult",

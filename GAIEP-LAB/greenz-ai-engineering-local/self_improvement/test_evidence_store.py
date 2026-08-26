@@ -183,7 +183,7 @@ def test_store_migrates_v1_schema_and_backfills_lineage(tmp_path: Path) -> None:
         version = connection.execute(
             "SELECT value FROM metadata WHERE key = 'schema_version'"
         ).fetchone()[0]
-    assert version == "2"
+    assert version == "3"
 
 
 def test_denied_authorization_is_stored_but_not_marked_authorized(tmp_path: Path) -> None:
