@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from .artifact import normalize_artifact
 from .evaluation import EvaluationResult
+from .evidence_store import GreenMemoryStore
 from .experiment import ExperimentArm, ExperimentPlan
 from .rollout import RolloutRunner
 from .task_factory import EngineeringTask
@@ -23,10 +24,15 @@ class ExperimentTrial:
 class ExperimentRunner:
     """Run model/scaffold arms without owning routing or promotion decisions."""
 
-    def __init__(self, rollout_factory: Callable[[ExperimentArm], RolloutRunner],
-                 evaluate: Callable[[EngineeringTask, object], EvaluationResult]) -> None:
+    def __init__(
+        self,
+        rollout_factory: Callable[[ExperimentArm], RolloutRunner],
+        evaluate: Callable[[EngineeringTask, object], EvaluationResult],
+        evidence_store: GreenMemoryStore | None = None,
+    ) -> None:
         self._rollout_factory = rollout_factory
         self._evaluate = evaluate
+        self._evidence_store = evidence_store
 
     def run(self, plan: ExperimentPlan, tasks: Iterable[EngineeringTask]) -> list[ExperimentTrial]:
         task_map = {task.task_id: task for task in tasks}
@@ -46,5 +52,13 @@ class ExperimentRunner:
                     ),
                     evaluation,
                 )
-                trials.append(ExperimentTrial(task_id=task_id, arm=arm, trajectory=trajectory))
+                if self._evidence_store is not None:
+                    self._evidence_store.append(trajectory)
+                trials.append(
+                    ExperimentTrial(
+                        task_id=task_id,
+                        arm=arm,
+                        trajectory=trajectory,
+                    )
+                )
         return trials
