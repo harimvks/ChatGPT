@@ -27,6 +27,7 @@ testpaths = [
     "tests/test_context_skills_integration_contracts.py",
     "self_improvement/test_provenance.py",
     "tests/test_vertical_runtime_provenance_integration.py",
+    "tests/test_governed_agent_run_persistence.py",
 ]
 pythonpath = ["."]
 addopts = "-q"

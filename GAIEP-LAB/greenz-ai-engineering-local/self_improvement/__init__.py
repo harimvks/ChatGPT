@@ -9,6 +9,7 @@ from .evaluation import EvaluationResult, EvaluationRunner
 from .failure_miner import FailureMiner
 from .gate_adapter import ExternalValidationGate, GateCommand, GateResult
 from .gateway_rollout import GatewayResearchRollout, GatewayRolloutRequest
+from .governed_agent_run import GovernedAgentRunResult, run_governed_agent_request
 from .loop import ResearchRun, SelfImprovementLoop
 from .rollout import ResearchRolloutRunner, RolloutResult
 from .sandbox import CandidateSandbox, SandboxWorkspace
@@ -30,11 +31,13 @@ __all__ = [
     "GateResult",
     "GatewayResearchRollout",
     "GatewayRolloutRequest",
+    "GovernedAgentRunResult",
     "AuthorizationProvenance",
     "ContextProvenance",
     "ResearchRun",
     "RunProvenance",
     "provenance_from_mcp_result",
+    "run_governed_agent_request",
     "SelfImprovementLoop",
     "ResearchRolloutRunner",
     "RolloutResult",
