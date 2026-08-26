@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Iterable
 
 from .evaluation import EvaluationResult
+from .fingerprint import failure_fingerprint
 from .task_factory import EngineeringTask, TaskFactory
 
 
@@ -15,6 +16,17 @@ class FailureCluster:
     failure_class: str
     count: int
     task_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class EvidenceFailureCluster:
+    """Repeated failure mode with a deterministic evidence fingerprint."""
+
+    failure_class: str
+    fingerprint: str
+    count: int
+    task_ids: tuple[str, ...]
+    model_names: tuple[str, ...]
 
 
 class FailureMiner:
@@ -30,8 +42,34 @@ class FailureMiner:
             for name, ids in sorted(grouped.items(), key=lambda item: (-len(item[1]), item[0]))
         ]
 
-    def propose_followups(self, tasks: Iterable[EngineeringTask],
-                         results: Iterable[EvaluationResult], *, limit: int = 10) -> list[EngineeringTask]:
+    def cluster_trajectories(self, trajectories: Iterable[object]) -> list[EvidenceFailureCluster]:
+        """Cluster durable trajectories by generalized failure fingerprint."""
+        grouped: dict[str, list[object]] = {}
+        for trajectory in trajectories:
+            fingerprint = failure_fingerprint(trajectory)
+            if fingerprint:
+                grouped.setdefault(fingerprint, []).append(trajectory)
+        clusters: list[EvidenceFailureCluster] = []
+        for fingerprint, records in grouped.items():
+            first = records[0]
+            clusters.append(
+                EvidenceFailureCluster(
+                    failure_class=first.failure_class or "unknown",
+                    fingerprint=fingerprint,
+                    count=len(records),
+                    task_ids=tuple(sorted(record.task_id for record in records)),
+                    model_names=tuple(sorted({record.model_name for record in records})),
+                )
+            )
+        return sorted(clusters, key=lambda item: (-item.count, item.fingerprint))
+
+    def propose_followups(
+        self,
+        tasks: Iterable[EngineeringTask],
+        results: Iterable[EvaluationResult],
+        *,
+        limit: int = 10,
+    ) -> list[EngineeringTask]:
         by_id = {task.task_id: task for task in tasks}
         failures = [result for result in results if result.failure_class and result.task_id in by_id]
         counts = Counter(result.failure_class for result in failures)
@@ -42,17 +80,19 @@ class FailureMiner:
                 break
             original = by_id[result.task_id]
             failure = result.failure_class or "unknown"
-            proposals.append(factory.from_seed(
-                task_type=original.task_type,
-                title=f"Targeted follow-up: {failure}",
-                objective=(
-                    f"Re-solve the original task while explicitly addressing the observed "
-                    f"{failure}; this is a research follow-up, not a production task."
-                ),
-                repository_path=original.repository_path,
-                acceptance=original.acceptance,
-                constraints=(*original.constraints, f"derived_from={original.task_id}"),
-                difficulty=min(5, original.difficulty + 1),
-                source="failure_mining",
-            ))
+            proposals.append(
+                factory.from_seed(
+                    task_type=original.task_type,
+                    title=f"Targeted follow-up: {failure}",
+                    objective=(
+                        f"Re-solve the original task while explicitly addressing the observed "
+                        f"{failure}; this is a research follow-up, not a production task."
+                    ),
+                    repository_path=original.repository_path,
+                    acceptance=original.acceptance,
+                    constraints=(*original.constraints, f"derived_from={original.task_id}"),
+                    difficulty=min(5, original.difficulty + 1),
+                    source="failure_mining",
+                )
+            )
         return proposals
