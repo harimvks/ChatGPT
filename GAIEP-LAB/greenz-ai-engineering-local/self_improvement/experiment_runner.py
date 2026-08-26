@@ -43,15 +43,17 @@ class ExperimentRunner:
                 rollout = self._rollout_factory(arm).run(task)
                 artifact = normalize_artifact(rollout.artifact)
                 evaluation = self._evaluate(task, artifact)
-                trajectory = TrajectoryRecord.from_results(
-                    rollout.__class__(
-                        task_id=rollout.task_id,
-                        artifact=artifact,
-                        model_name=rollout.model_name,
-                        scaffold_name=rollout.scaffold_name,
-                    ),
-                    evaluation,
+                normalized_rollout = rollout.__class__(
+                    task_id=rollout.task_id,
+                    artifact=artifact,
+                    model_name=rollout.model_name,
+                    scaffold_name=rollout.scaffold_name,
+                    endpoint_model=rollout.endpoint_model,
+                    latency_s=rollout.latency_s,
+                    usage=rollout.usage,
+                    provenance=rollout.provenance,
                 )
+                trajectory = TrajectoryRecord.from_results(normalized_rollout, evaluation)
                 if self._evidence_store is not None:
                     self._evidence_store.append(trajectory)
                 trials.append(

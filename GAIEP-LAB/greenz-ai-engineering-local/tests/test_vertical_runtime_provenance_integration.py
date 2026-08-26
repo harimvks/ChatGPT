@@ -42,6 +42,7 @@ from runtime.skills.contracts import (
     SkillStatus,
 )
 from self_improvement.evaluation import EvaluationResult
+from self_improvement.evidence_store import GreenMemoryStore
 from self_improvement.rollout import RolloutResult
 from self_improvement.runtime_provenance import provenance_from_mcp_result
 from self_improvement.trajectory import TrajectoryRecord
@@ -161,7 +162,9 @@ def _request() -> McpRequest:
     )
 
 
-def test_vertical_success_produces_actual_context_skill_auth_observation_provenance() -> None:
+def test_vertical_success_produces_actual_context_skill_auth_observation_provenance(
+    tmp_path,
+) -> None:
     registry = CapabilityRegistry((_capability(),))
 
     def resolver(action: Action, _arguments: object) -> Observation:
@@ -219,11 +222,24 @@ def test_vertical_success_produces_actual_context_skill_auth_observation_provena
         rollout,
         EvaluationResult(task_id="task-1", passed=True, reward=1.0, checks={"pytest": True}),
     )
+    store = GreenMemoryStore(tmp_path / "greenmemory.sqlite3")
+    record_id = store.append(trajectory)
+    restored = store.get(record_id)
+
     assert trajectory.provenance == provenance
+    assert restored == trajectory
+    assert store.find_by_run("run-1") == (trajectory,)
+    assert store.find_by_context_hash(provenance.context.context_hash) == (trajectory,)
+    assert store.find_by_skill(provenance.skill_fingerprints[0]) == (trajectory,)
+    assert store.find_by_capability("market.get_quote", authorized_only=True) == (trajectory,)
+    assert store.verify_integrity().passed
     assert "raw candidate" not in trajectory.to_json()
+    assert "raw candidate" not in restored.to_json()
 
 
-def test_vertical_denial_records_authorization_without_runtime_observation() -> None:
+def test_vertical_denial_records_authorization_without_runtime_observation(
+    tmp_path,
+) -> None:
     registry = CapabilityRegistry((_capability(),))
     gateway = McpCapabilityGateway(
         registry=registry,
@@ -247,5 +263,27 @@ def test_vertical_denial_records_authorization_without_runtime_observation() -> 
     assert provenance.authorization[0].reason == "skill_denied"
     assert provenance.capability_ids_requested == ("market.get_quote",)
     assert provenance.capability_ids_authorized == ()
+    rollout = RolloutResult(
+        task_id="task-denied",
+        artifact=type("Artifact", (), {"files": {}})(),
+        model_name="small-python-coder",
+        scaffold_name="inspect-plan-implement-test",
+        provenance=provenance,
+    )
+    trajectory = TrajectoryRecord.from_results(
+        rollout,
+        EvaluationResult(
+            task_id="task-denied",
+            passed=False,
+            reward=0.0,
+            checks={"authorized_runtime_path": False},
+            failure_class="unauthorized",
+        ),
+    )
+    store = GreenMemoryStore(tmp_path / "greenmemory-denied.sqlite3")
+    store.append(trajectory)
+
     assert provenance.observation_refs == ()
     assert gateway.runtime.executed_actions == []
+    assert store.find_by_capability("market.get_quote") == (trajectory,)
+    assert store.find_by_capability("market.get_quote", authorized_only=True) == ()
