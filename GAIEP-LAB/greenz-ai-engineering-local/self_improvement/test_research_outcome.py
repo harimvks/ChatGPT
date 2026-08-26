@@ -26,7 +26,10 @@ def _record(task_id: str, passed: bool, failure_class: str | None) -> Trajectory
 
 
 def test_improved_when_targeted_failure_disappears() -> None:
-    source = [_record("source-1", False, "test_failure"), _record("source-2", False, "test_failure")]
+    source = [
+        _record("source-1", False, "test_failure"),
+        _record("source-2", False, "test_failure"),
+    ]
     follow_up = [_record("follow-up", True, None)]
     assessment = assess_intervention(source, follow_up)
     assert assessment.outcome is ResearchOutcome.IMPROVED
@@ -34,7 +37,10 @@ def test_improved_when_targeted_failure_disappears() -> None:
 
 
 def test_no_change_when_targeted_failure_persists() -> None:
-    source = [_record("source-1", False, "test_failure"), _record("source-2", False, "test_failure")]
+    source = [
+        _record("source-1", False, "test_failure"),
+        _record("source-2", False, "test_failure"),
+    ]
     follow_up = [_record("follow-up", False, "test_failure")]
     assessment = assess_intervention(source, follow_up)
     assert assessment.outcome is ResearchOutcome.NO_CHANGE
@@ -42,7 +48,10 @@ def test_no_change_when_targeted_failure_persists() -> None:
 
 
 def test_regressed_when_new_failure_replaces_targeted_failure() -> None:
-    source = [_record("source-1", False, "test_failure"), _record("source-2", False, "test_failure")]
+    source = [
+        _record("source-1", False, "test_failure"),
+        _record("source-2", False, "test_failure"),
+    ]
     follow_up = [_record("follow-up", False, "type_failure")]
     assessment = assess_intervention(source, follow_up)
     assert assessment.outcome is ResearchOutcome.REGRESSED
@@ -50,6 +59,9 @@ def test_regressed_when_new_failure_replaces_targeted_failure() -> None:
 
 
 def test_empty_follow_up_is_inconclusive() -> None:
-    source = [_record("source-1", False, "test_failure"), _record("source-2", False, "test_failure")]
+    source = [
+        _record("source-1", False, "test_failure"),
+        _record("source-2", False, "test_failure"),
+    ]
     assessment = assess_intervention(source, [])
     assert assessment.outcome is ResearchOutcome.INCONCLUSIVE
