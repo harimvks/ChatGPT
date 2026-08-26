@@ -32,6 +32,7 @@ from .research_loop import (
     ResearchSubmissionAdapter,
     ResearchSubmissionRecord,
 )
+from .research_outcome import ResearchOutcome, ResearchOutcomeAssessment, assess_intervention
 from .research_report import ResearchLineageSummary, render_hypothesis_report, summarize_hypothesis
 from .rollout import ResearchRolloutRunner, RolloutResult
 from .runtime_provenance import provenance_from_mcp_result
@@ -64,6 +65,9 @@ __all__ = [
     "ResearchSubmissionRecord",
     "ResearchSubmissionAdapter",
     "ResearchProposalStatus",
+    "ResearchOutcome",
+    "ResearchOutcomeAssessment",
+    "assess_intervention",
     "ResearchLineageSummary",
     "summarize_hypothesis",
     "render_hypothesis_report",
