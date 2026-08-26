@@ -9,7 +9,7 @@ from self_improvement.controlled_pilot import (
 from self_improvement.evidence_store import GreenMemoryStore
 from self_improvement.experiment_runner import ExperimentRunner
 from self_improvement.provenance import RunProvenance
-from self_improvement.research_loop import ResearchSubmissionAdapter, FailureResearchLoop
+from self_improvement.research_loop import FailureResearchLoop, ResearchSubmissionAdapter
 from self_improvement.research_outcome import ResearchOutcome, assess_intervention
 from self_improvement.rollout import RolloutResult
 from self_improvement.task_factory import EngineeringTask
@@ -71,8 +71,11 @@ def test_controlled_pilot_is_12_trials_and_drives_one_research_cycle(tmp_path: P
     )
 
     assert submission.result_evidence_ids
-    follow_up = [memory.get(record_id) for record_id in submission.result_evidence_ids]
-    follow_up_records = [record.trajectory for record in follow_up if record is not None]
+    follow_up_records = [
+        record
+        for record_id in submission.result_evidence_ids
+        if (record := memory.get(record_id)) is not None
+    ]
     assessment = assess_intervention(source, follow_up_records)
     assert assessment.outcome is ResearchOutcome.IMPROVED
     assert memory.count() == 13
