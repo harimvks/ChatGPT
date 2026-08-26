@@ -33,6 +33,7 @@ testpaths = [
     "self_improvement/test_research_loop.py",
     "self_improvement/test_research_report.py",
     "self_improvement/test_research_outcome.py",
+    "self_improvement/test_controlled_pilot.py",
     "tests/test_vertical_runtime_provenance_integration.py",
 ]
 pythonpath = ["."]
