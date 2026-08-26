@@ -1,12 +1,15 @@
+from pathlib import Path
+
 from self_improvement.artifact import CandidateArtifact
 from self_improvement.evaluation import EvaluationResult
+from self_improvement.evidence_store import GreenMemoryStore
 from self_improvement.experiment import ExperimentArm, ExperimentPlan
 from self_improvement.experiment_runner import ExperimentRunner
 from self_improvement.rollout import ResearchRolloutRunner
 from self_improvement.task_factory import TaskFactory
 
 
-def test_runner_executes_every_task_arm_pair():
+def _runner(evidence_store=None):
     task = TaskFactory().from_seed(
         task_type="implementation", title="T", objective="Implement X"
     )
@@ -31,8 +34,27 @@ def test_runner_executes_every_task_arm_pair():
             checks={"pytest": True},
         )
 
-    trials = ExperimentRunner(rollout_factory, evaluate).run(plan, [task])
+    return ExperimentRunner(rollout_factory, evaluate, evidence_store), plan, task
+
+
+def test_runner_executes_every_task_arm_pair():
+    runner, plan, task = _runner()
+
+    trials = runner.run(plan, [task])
+
     assert len(trials) == 2
     assert {(t.arm.model_name, t.arm.scaffold_name) for t in trials} == {
-        ("m1", "s1"), ("m2", "s2")
+        ("m1", "s1"),
+        ("m2", "s2"),
     }
+
+
+def test_runner_persists_each_completed_trial(tmp_path: Path):
+    store = GreenMemoryStore(tmp_path / "greenmemory.sqlite3")
+    runner, plan, task = _runner(store)
+
+    trials = runner.run(plan, [task])
+
+    assert len(trials) == 2
+    assert store.count() == 2
+    assert len(store.find_by_task(task.task_id)) == 2
