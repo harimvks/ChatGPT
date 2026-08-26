@@ -1,3 +1,4 @@
+import hashlib
 import sqlite3
 from pathlib import Path
 
@@ -81,16 +82,13 @@ def test_store_supports_structured_research_queries(tmp_path: Path) -> None:
     failures = store.find_failures("test_failure")
     assert len(failures) == 1
     assert failures[0].task_id == "task-2"
-    similar = store.find_similar_failures(failures[0])
-    assert similar == ()
+    assert store.find_similar_failures(failures[0]) == ()
 
 
 def test_store_exposes_failure_fingerprint_and_summary(tmp_path: Path) -> None:
     store = GreenMemoryStore(tmp_path / "greenmemory.sqlite3")
-    first = _record("task-1", passed=False)
-    second = _record("task-2", passed=False, run_id="run-2")
-    store.append(first)
-    store.append(second)
+    store.append(_record("task-1", passed=False))
+    store.append(_record("task-2", passed=False, run_id="run-2"))
 
     failure_record = store.find_failures("test_failure")[0]
     matches = store.find_similar_failures(failure_record)
@@ -137,7 +135,6 @@ def test_store_migrates_v1_schema_and_backfills_lineage(tmp_path: Path) -> None:
     path = tmp_path / "greenmemory.sqlite3"
     record = _record()
     payload = record.to_json()
-    import hashlib
     digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
     with sqlite3.connect(path) as connection:
