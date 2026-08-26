@@ -9,6 +9,7 @@ from typing import Iterable
 from .evaluation import EvaluationResult
 from .fingerprint import failure_fingerprint
 from .task_factory import EngineeringTask, TaskFactory
+from .trajectory import TrajectoryRecord
 
 
 @dataclass(frozen=True)
@@ -42,9 +43,11 @@ class FailureMiner:
             for name, ids in sorted(grouped.items(), key=lambda item: (-len(item[1]), item[0]))
         ]
 
-    def cluster_trajectories(self, trajectories: Iterable[object]) -> list[EvidenceFailureCluster]:
+    def cluster_trajectories(
+        self, trajectories: Iterable[TrajectoryRecord]
+    ) -> list[EvidenceFailureCluster]:
         """Cluster durable trajectories by generalized failure fingerprint."""
-        grouped: dict[str, list[object]] = {}
+        grouped: dict[str, list[TrajectoryRecord]] = {}
         for trajectory in trajectories:
             fingerprint = failure_fingerprint(trajectory)
             if fingerprint:
