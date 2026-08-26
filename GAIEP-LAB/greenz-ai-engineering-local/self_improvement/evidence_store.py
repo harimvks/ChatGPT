@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
@@ -96,10 +95,14 @@ class GreenMemoryStore:
                     trajectory_json TEXT NOT NULL,
                     content_hash TEXT NOT NULL UNIQUE
                 );
-                CREATE INDEX IF NOT EXISTS idx_evidence_run ON evidence_records(run_id);
-                CREATE INDEX IF NOT EXISTS idx_evidence_task ON evidence_records(task_id);
-                CREATE INDEX IF NOT EXISTS idx_evidence_failure ON evidence_records(failure_class);
-                CREATE INDEX IF NOT EXISTS idx_evidence_model ON evidence_records(model_name);
+                CREATE INDEX IF NOT EXISTS idx_evidence_run
+                    ON evidence_records(run_id);
+                CREATE INDEX IF NOT EXISTS idx_evidence_task
+                    ON evidence_records(task_id);
+                CREATE INDEX IF NOT EXISTS idx_evidence_failure
+                    ON evidence_records(failure_class);
+                CREATE INDEX IF NOT EXISTS idx_evidence_model
+                    ON evidence_records(model_name);
                 """
             )
             connection.execute(
@@ -143,18 +146,32 @@ class GreenMemoryStore:
         return TrajectoryRecord.from_json(row["trajectory_json"]) if row else None
 
     def find_by_run(self, run_id: str) -> tuple[TrajectoryRecord, ...]:
-        return self._query("SELECT trajectory_json FROM evidence_records WHERE run_id = ? ORDER BY created_at, record_id", (run_id,))
+        sql = (
+            "SELECT trajectory_json FROM evidence_records "
+            "WHERE run_id = ? ORDER BY created_at, record_id"
+        )
+        return self._query(sql, (run_id,))
 
     def find_by_task(self, task_id: str) -> tuple[TrajectoryRecord, ...]:
-        return self._query("SELECT trajectory_json FROM evidence_records WHERE task_id = ? ORDER BY created_at, record_id", (task_id,))
+        sql = (
+            "SELECT trajectory_json FROM evidence_records "
+            "WHERE task_id = ? ORDER BY created_at, record_id"
+        )
+        return self._query(sql, (task_id,))
 
     def find_failures(self, failure_class: str | None = None) -> tuple[TrajectoryRecord, ...]:
         if failure_class is None:
-            return self._query("SELECT trajectory_json FROM evidence_records WHERE passed = 0 ORDER BY created_at, record_id", ())
-        return self._query(
-            "SELECT trajectory_json FROM evidence_records WHERE passed = 0 AND failure_class = ? ORDER BY created_at, record_id",
-            (failure_class,),
+            sql = (
+                "SELECT trajectory_json FROM evidence_records "
+                "WHERE passed = 0 ORDER BY created_at, record_id"
+            )
+            return self._query(sql, ())
+        sql = (
+            "SELECT trajectory_json FROM evidence_records "
+            "WHERE passed = 0 AND failure_class = ? "
+            "ORDER BY created_at, record_id"
         )
+        return self._query(sql, (failure_class,))
 
     def count(self) -> int:
         with self._connect() as connection:
