@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections import Counter
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -75,7 +74,6 @@ class FailureMiner:
     ) -> list[EngineeringTask]:
         by_id = {task.task_id: task for task in tasks}
         failures = [result for result in results if result.failure_class and result.task_id in by_id]
-        counts = Counter(result.failure_class for result in failures)
         factory = TaskFactory()
         proposals: list[EngineeringTask] = []
         for result in failures:
