@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,10 +32,12 @@ class EvidenceRecord:
     content_hash: str
 
     @classmethod
-    def from_trajectory(cls, record: TrajectoryRecord) -> "EvidenceRecord":
+    def from_trajectory(cls, record: TrajectoryRecord) -> EvidenceRecord:
         payload = record.to_json()
         provenance = record.provenance
-        context_hash = provenance.context.context_hash if provenance and provenance.context else None
+        context_hash = (
+            provenance.context.context_hash if provenance and provenance.context else None
+        )
         digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
         return cls(
             record_id=digest,
@@ -212,14 +213,19 @@ class GreenMemoryStore:
             if provenance:
                 for skill in provenance.skill_fingerprints:
                     connection.execute(
-                        "INSERT OR IGNORE INTO evidence_skills(record_id, fingerprint) VALUES (?, ?)",
+                        (
+                            "INSERT OR IGNORE INTO evidence_skills(record_id, fingerprint) "
+                            "VALUES (?, ?)"
+                        ),
                         (row["record_id"], skill),
                     )
                 for capability in provenance.capability_ids_requested:
                     authorized = int(capability in provenance.capability_ids_authorized)
                     connection.execute(
                         """
-                        INSERT OR IGNORE INTO evidence_capabilities(record_id, capability_id, authorized)
+                        INSERT OR IGNORE INTO evidence_capabilities(
+                        record_id, capability_id, authorized
+                    )
                         VALUES (?, ?, ?)
                         """,
                         (row["record_id"], capability, authorized),
@@ -263,11 +269,17 @@ class GreenMemoryStore:
             if record.provenance:
                 connection.executemany(
                     """
-                    INSERT OR IGNORE INTO evidence_capabilities(record_id, capability_id, authorized)
+                    INSERT OR IGNORE INTO evidence_capabilities(
+                        record_id, capability_id, authorized
+                    )
                     VALUES (?, ?, ?)
                     """,
                     (
-                        (evidence.record_id, capability, int(capability in record.provenance.capability_ids_authorized))
+                        (
+                            evidence.record_id,
+                            capability,
+                            int(capability in record.provenance.capability_ids_authorized),
+                        )
                         for capability in record.provenance.capability_ids_requested
                     ),
                 )
@@ -283,19 +295,22 @@ class GreenMemoryStore:
 
     def find_by_run(self, run_id: str) -> tuple[TrajectoryRecord, ...]:
         return self._query(
-            "SELECT trajectory_json FROM evidence_records WHERE run_id = ? ORDER BY created_at, record_id",
+            "SELECT trajectory_json FROM evidence_records WHERE run_id = ? "
+            "ORDER BY created_at, record_id",
             (run_id,),
         )
 
     def find_by_task(self, task_id: str) -> tuple[TrajectoryRecord, ...]:
         return self._query(
-            "SELECT trajectory_json FROM evidence_records WHERE task_id = ? ORDER BY created_at, record_id",
+            "SELECT trajectory_json FROM evidence_records WHERE task_id = ? "
+            "ORDER BY created_at, record_id",
             (task_id,),
         )
 
     def find_by_context_hash(self, context_hash: str) -> tuple[TrajectoryRecord, ...]:
         return self._query(
-            "SELECT trajectory_json FROM evidence_records WHERE context_hash = ? ORDER BY created_at, record_id",
+            "SELECT trajectory_json FROM evidence_records WHERE context_hash = ? "
+            "ORDER BY created_at, record_id",
             (context_hash,),
         )
 
@@ -309,7 +324,9 @@ class GreenMemoryStore:
             (fingerprint,),
         )
 
-    def find_by_capability(self, capability_id: str, *, authorized_only: bool = False) -> tuple[TrajectoryRecord, ...]:
+    def find_by_capability(
+        self, capability_id: str, *, authorized_only: bool = False
+    ) -> tuple[TrajectoryRecord, ...]:
         sql = (
             "SELECT e.trajectory_json FROM evidence_records e "
             "JOIN evidence_capabilities c ON c.record_id = e.record_id "
@@ -324,21 +341,26 @@ class GreenMemoryStore:
     def find_failures(self, failure_class: str | None = None) -> tuple[TrajectoryRecord, ...]:
         if failure_class is None:
             return self._query(
-                "SELECT trajectory_json FROM evidence_records WHERE passed = 0 ORDER BY created_at, record_id",
+                "SELECT trajectory_json FROM evidence_records WHERE passed = 0 "
+                "ORDER BY created_at, record_id",
                 (),
             )
         return self._query(
-            "SELECT trajectory_json FROM evidence_records WHERE passed = 0 AND failure_class = ? ORDER BY created_at, record_id",
+            "SELECT trajectory_json FROM evidence_records WHERE passed = 0 "
+            "AND failure_class = ? ORDER BY created_at, record_id",
             (failure_class,),
         )
 
     def find_by_failure_fingerprint(self, fingerprint: str) -> tuple[TrajectoryRecord, ...]:
         return self._query(
-            "SELECT trajectory_json FROM evidence_records WHERE failure_fingerprint = ? ORDER BY created_at, record_id",
+            "SELECT trajectory_json FROM evidence_records WHERE failure_fingerprint = ? "
+            "ORDER BY created_at, record_id",
             (fingerprint,),
         )
 
-    def find_similar_failures(self, record: TrajectoryRecord, *, limit: int = 20) -> tuple[TrajectoryRecord, ...]:
+    def find_similar_failures(
+        self, record: TrajectoryRecord, *, limit: int = 20
+    ) -> tuple[TrajectoryRecord, ...]:
         fingerprint = failure_fingerprint(record)
         if fingerprint is None:
             return ()
@@ -354,7 +376,8 @@ class GreenMemoryStore:
     def summary(self) -> MemorySummary:
         with self._connect() as connection:
             totals = connection.execute(
-                "SELECT COUNT(*) AS total, SUM(passed) AS passed, AVG(reward) AS average_reward FROM evidence_records"
+                "SELECT COUNT(*) AS total, SUM(passed) AS passed, "
+                "AVG(reward) AS average_reward FROM evidence_records"
             ).fetchone()
             failures = connection.execute(
                 """
@@ -364,7 +387,8 @@ class GreenMemoryStore:
                 """
             ).fetchall()
             models = connection.execute(
-                "SELECT model_name, COUNT(*) AS count FROM evidence_records GROUP BY model_name ORDER BY count DESC, model_name"
+                "SELECT model_name, COUNT(*) AS count FROM evidence_records "
+                "GROUP BY model_name ORDER BY count DESC, model_name"
             ).fetchall()
         total = int(totals["total"] or 0)
         passed = int(totals["passed"] or 0)
@@ -373,7 +397,9 @@ class GreenMemoryStore:
             passed=passed,
             failed=total - passed,
             average_reward=float(totals["average_reward"] or 0.0),
-            failure_classes=tuple((str(row["failure_class"]), int(row["count"])) for row in failures),
+            failure_classes=tuple(
+                (str(row["failure_class"]), int(row["count"])) for row in failures
+            ),
             models=tuple((str(row["model_name"]), int(row["count"])) for row in models),
         )
 
@@ -381,7 +407,8 @@ class GreenMemoryStore:
         """Recompute every content hash without mutating the store."""
         with self._connect() as connection:
             rows = connection.execute(
-                "SELECT record_id, trajectory_json, content_hash FROM evidence_records ORDER BY record_id"
+                "SELECT record_id, trajectory_json, content_hash FROM evidence_records "
+                "ORDER BY record_id"
             ).fetchall()
         invalid: list[str] = []
         for row in rows:
@@ -392,7 +419,10 @@ class GreenMemoryStore:
 
     def export_jsonl(self, path: Path) -> int:
         """Export the canonical trajectory payloads without altering the ledger."""
-        records = self._query("SELECT trajectory_json FROM evidence_records ORDER BY created_at, record_id", ())
+        records = self._query(
+            "SELECT trajectory_json FROM evidence_records ORDER BY created_at, record_id",
+            (),
+        )
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w", encoding="utf-8") as handle:
             for record in records:

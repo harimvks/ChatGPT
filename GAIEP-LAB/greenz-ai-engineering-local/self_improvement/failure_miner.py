@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from .evaluation import EvaluationResult
 from .fingerprint import failure_fingerprint
@@ -73,7 +73,9 @@ class FailureMiner:
         limit: int = 10,
     ) -> list[EngineeringTask]:
         by_id = {task.task_id: task for task in tasks}
-        failures = [result for result in results if result.failure_class and result.task_id in by_id]
+        failures = [
+            result for result in results if result.failure_class and result.task_id in by_id
+        ]
         factory = TaskFactory()
         proposals: list[EngineeringTask] = []
         for result in failures:
