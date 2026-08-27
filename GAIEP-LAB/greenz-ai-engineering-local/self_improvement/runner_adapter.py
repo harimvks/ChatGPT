@@ -9,8 +9,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from time import monotonic
 
-from .model_runner import ModelRequest, ModelResult, ModelRunner
-
+from .model_runner import ModelRequest, ModelResult
 
 GovernedRollout = Callable[[ModelRequest], object]
 

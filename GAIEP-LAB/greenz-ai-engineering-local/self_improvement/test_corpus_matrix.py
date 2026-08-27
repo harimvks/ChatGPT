@@ -27,8 +27,16 @@ def test_matrix_validator_accepts_exact_complete_matrix() -> None:
 def test_matrix_validator_rejects_duplicates_and_missing_cells() -> None:
     spec = build_controlled_pilot()
     cells = [
-        CorpusCell(spec.plan.task_ids[0], spec.plan.arms[0].model_name, spec.plan.arms[0].scaffold_name),
-        CorpusCell(spec.plan.task_ids[0], spec.plan.arms[0].model_name, spec.plan.arms[0].scaffold_name),
+        CorpusCell(
+            spec.plan.task_ids[0],
+            spec.plan.arms[0].model_name,
+            spec.plan.arms[0].scaffold_name,
+        ),
+        CorpusCell(
+            spec.plan.task_ids[0],
+            spec.plan.arms[0].model_name,
+            spec.plan.arms[0].scaffold_name,
+        ),
     ]
     result = validate_cells(spec.plan, cells)
     assert not result.passed

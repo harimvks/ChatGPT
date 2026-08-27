@@ -6,8 +6,9 @@ from self_improvement.task_factory import EngineeringTask
 def test_governed_runner_preserves_identity_and_measures_latency() -> None:
     task = EngineeringTask(
         task_id="task-adapter-001",
+        task_type="implementation",
         title="adapter test",
-        description="test governed adapter",
+        objective="test governed adapter",
         difficulty=1,
     )
 
@@ -32,8 +33,9 @@ def test_governed_runner_preserves_identity_and_measures_latency() -> None:
 def test_metadata_is_provenance_safe() -> None:
     task = EngineeringTask(
         task_id="task-adapter-002",
+        task_type="implementation",
         title="metadata test",
-        description="test metadata",
+        objective="test metadata",
         difficulty=1,
     )
     result = GovernedModelRunner(

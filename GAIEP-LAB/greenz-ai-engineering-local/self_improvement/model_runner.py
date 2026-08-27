@@ -34,8 +34,7 @@ class ModelResult:
 class ModelRunner(Protocol):
     """Minimal provider-neutral contract for one research model invocation."""
 
-    def run(self, request: ModelRequest) -> ModelResult:
-        ...
+    def run(self, request: ModelRequest) -> ModelResult: ...
 
 
 class CallableModelRunner:

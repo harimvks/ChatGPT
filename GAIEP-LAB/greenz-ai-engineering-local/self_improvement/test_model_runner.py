@@ -5,10 +5,10 @@ from self_improvement.task_factory import TaskFactory
 
 
 def test_callable_runner_preserves_model_contract() -> None:
-    task = TaskFactory().create(
+    task = TaskFactory().from_seed(
         task_type="implementation",
         title="Implement deterministic helper",
-        specification="Return the requested value.",
+        objective="Return the requested value.",
     )
     runner = CallableModelRunner(
         lambda received: {"task_id": received.task_id},
@@ -25,10 +25,10 @@ def test_callable_runner_preserves_model_contract() -> None:
 
 
 def test_model_request_keeps_research_metadata() -> None:
-    task = TaskFactory().create(
+    task = TaskFactory().from_seed(
         task_type="implementation",
         title="Metadata task",
-        specification="Return the requested value.",
+        objective="Return the requested value.",
     )
     request = ModelRequest(task=task, metadata={"experiment_id": "exp-1"})
 

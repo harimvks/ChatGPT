@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
-from .experiment import ExperimentArm, ExperimentPlan
+from .experiment import ExperimentPlan
 
 
 @dataclass(frozen=True)
@@ -24,7 +24,11 @@ class CorpusValidation:
 
     @property
     def passed(self) -> bool:
-        return not self.duplicate_cells and not self.missing_cells and self.observed_cells == self.expected_cells
+        return (
+            not self.duplicate_cells
+            and not self.missing_cells
+            and self.observed_cells == self.expected_cells
+        )
 
 
 def expected_cells(plan: ExperimentPlan) -> tuple[CorpusCell, ...]:

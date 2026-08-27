@@ -7,8 +7,8 @@ persistence remains an explicit responsibility of the caller/runtime.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Callable, Sequence
 
 from .corpus_matrix import CorpusCell
 from .model_runner import ModelRequest, ModelResult, ModelRunner
